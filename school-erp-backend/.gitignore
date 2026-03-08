@@ -1,0 +1,32 @@
+# ════════════════════════════════════════════════════════════════════════════
+# School ERP — .gitignore
+# ════════════════════════════════════════════════════════════════════════════
+
+# Maven build outputs
+**/target/
+**/target/**
+
+# Environment secret files (NEVER commit — use .example files instead)
+.env.uat
+.env.prod
+.env.local
+.env
+
+# SSL certificates
+nginx/ssl/
+*.pem
+*.key
+*.crt
+
+# Logs
+logs/
+*.log
+
+# Backups
+backups/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp

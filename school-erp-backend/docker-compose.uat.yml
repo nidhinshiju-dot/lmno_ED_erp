@@ -1,0 +1,173 @@
+# ════════════════════════════════════════════════════════════════════════════
+# School ERP — UAT Environment
+# Usage: docker-compose -f docker-compose.uat.yml --env-file .env.uat up -d
+# ════════════════════════════════════════════════════════════════════════════
+version: '3.9'
+
+services:
+
+  # ── Database ─────────────────────────────────────────────────────────────
+  postgres-uat:
+    image: postgres:15-alpine
+    container_name: erp-uat-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_uat_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - erp-uat-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── API Gateway ───────────────────────────────────────────────────────────
+  api-gateway-uat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: api-gateway
+    container_name: erp-uat-gateway
+    restart: unless-stopped
+    ports:
+      - "8090:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      JWT_SECRET: ${JWT_SECRET}
+      CORE_SERVICE_URL: http://erp-uat-core:8082
+      AUTH_SERVICE_URL: http://erp-uat-auth:8081
+      LMS_SERVICE_URL: http://erp-uat-lms:8083
+      FEE_SERVICE_URL: http://erp-uat-fee:8084
+    depends_on:
+      - core-service-uat
+      - auth-service-uat
+      - lms-service-uat
+    networks:
+      - erp-uat-network
+
+  # ── Auth Service ──────────────────────────────────────────────────────────
+  auth-service-uat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: auth-service
+    container_name: erp-uat-auth
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      DB_URL: jdbc:postgresql://postgres-uat:5432/${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USER: ${MAIL_USER}
+      MAIL_PASS: ${MAIL_PASS}
+    depends_on:
+      postgres-uat:
+        condition: service_healthy
+    networks:
+      - erp-uat-network
+
+  # ── Core Service ──────────────────────────────────────────────────────────
+  core-service-uat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: core-service
+    container_name: erp-uat-core
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      DB_URL: jdbc:postgresql://postgres-uat:5432/${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USER: ${MAIL_USER}
+      MAIL_PASS: ${MAIL_PASS}
+      AUTH_SERVICE_URL: http://erp-uat-auth:8081
+    depends_on:
+      postgres-uat:
+        condition: service_healthy
+    networks:
+      - erp-uat-network
+
+  # ── LMS Service ───────────────────────────────────────────────────────────
+  lms-service-uat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: lms-service
+    container_name: erp-uat-lms
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      DB_URL: jdbc:postgresql://postgres-uat:5432/${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      postgres-uat:
+        condition: service_healthy
+    networks:
+      - erp-uat-network
+
+  # ── Fee Service ───────────────────────────────────────────────────────────
+  fee-service-uat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: fee-service
+    container_name: erp-uat-fee
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: uat
+      DB_URL: jdbc:postgresql://postgres-uat:5432/${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      postgres-uat:
+        condition: service_healthy
+    networks:
+      - erp-uat-network
+
+  # ── PgAdmin ───────────────────────────────────────────────────────────────
+  pgadmin-uat:
+    image: dpage/pgadmin4:latest
+    container_name: erp-uat-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-uat-admin@school.app}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-UatAdmin@123}
+    ports:
+      - "5051:80"
+    networks:
+      - erp-uat-network
+
+volumes:
+  postgres_uat_data:
+
+networks:
+  erp-uat-network:
+    driver: bridge

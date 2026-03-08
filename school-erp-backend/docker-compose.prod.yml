@@ -1,0 +1,176 @@
+# ════════════════════════════════════════════════════════════════════════════
+# School ERP — Production Environment
+# Usage: docker-compose -f docker-compose.prod.yml --env-file .env.prod up -d
+# ════════════════════════════════════════════════════════════════════════════
+version: '3.9'
+
+services:
+
+  # ── Database ─────────────────────────────────────────────────────────────
+  postgres-prod:
+    image: postgres:15-alpine
+    container_name: erp-prod-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+      - ./backups:/backups              # mount for pg_dump backup scripts
+    networks:
+      - erp-prod-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # ── API Gateway ───────────────────────────────────────────────────────────
+  api-gateway:
+    image: ${DOCKER_REGISTRY}/erp-api-gateway:${APP_VERSION:-latest}
+    container_name: erp-prod-gateway
+    restart: always
+    ports:
+      - "80:8080"        # Map to public port 80
+      - "443:8443"       # HTTPS port (configure SSL termination via nginx or load balancer)
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      JWT_SECRET: ${JWT_SECRET}
+      CORE_SERVICE_URL: http://core-service:8082
+      AUTH_SERVICE_URL: http://auth-service:8081
+      LMS_SERVICE_URL: http://lms-service:8083
+      FEE_SERVICE_URL: http://fee-service:8084
+    depends_on:
+      - core-service
+      - auth-service
+      - lms-service
+    networks:
+      - erp-prod-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ── Auth Service ──────────────────────────────────────────────────────────
+  auth-service:
+    image: ${DOCKER_REGISTRY}/erp-auth-service:${APP_VERSION:-latest}
+    container_name: erp-prod-auth
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres-prod:5432/${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+    depends_on:
+      postgres-prod:
+        condition: service_healthy
+    networks:
+      - erp-prod-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ── Core Service ──────────────────────────────────────────────────────────
+  core-service:
+    image: ${DOCKER_REGISTRY}/erp-core-service:${APP_VERSION:-latest}
+    container_name: erp-prod-core
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres-prod:5432/${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USER: ${MAIL_USER}
+      MAIL_PASS: ${MAIL_PASS}
+      FILE_UPLOAD_DIR: /app/uploads
+    volumes:
+      - file_uploads:/app/uploads
+    depends_on:
+      postgres-prod:
+        condition: service_healthy
+    networks:
+      - erp-prod-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+  # ── LMS Service ───────────────────────────────────────────────────────────
+  lms-service:
+    image: ${DOCKER_REGISTRY}/erp-lms-service:${APP_VERSION:-latest}
+    container_name: erp-prod-lms
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres-prod:5432/${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      FILE_UPLOAD_DIR: /app/uploads
+    volumes:
+      - file_uploads:/app/uploads
+    depends_on:
+      postgres-prod:
+        condition: service_healthy
+    networks:
+      - erp-prod-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ── Fee Service ───────────────────────────────────────────────────────────
+  fee-service:
+    image: ${DOCKER_REGISTRY}/erp-fee-service:${APP_VERSION:-latest}
+    container_name: erp-prod-fee
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://postgres-prod:5432/${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      postgres-prod:
+        condition: service_healthy
+    networks:
+      - erp-prod-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ── Nginx Reverse Proxy (SSL termination) ─────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: erp-prod-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro          # mount your SSL certificates
+    depends_on:
+      - api-gateway
+    networks:
+      - erp-prod-network
+
+volumes:
+  postgres_prod_data:
+  file_uploads:
+
+networks:
+  erp-prod-network:
+    driver: bridge

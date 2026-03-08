@@ -1,0 +1,45 @@
+# ══════════════════════════════════════════════
+# Core Service — Production Spring Profile
+# Activated via: SPRING_PROFILES_ACTIVE=prod
+# ══════════════════════════════════════════════
+server:
+  port: 8082
+
+spring:
+  application:
+    name: core-service
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  jpa:
+    hibernate:
+      ddl-auto: validate      # PROD: never auto-alter — fail fast if schema is wrong
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        tenant_identifier_resolver: com.schoolerp.core.config.tenant.TenantIdentifierResolver
+        multi_tenant_connection_provider: com.schoolerp.core.config.tenant.TenantConnectionProvider
+
+  mail:
+    host: ${MAIL_HOST}
+    port: ${MAIL_PORT}
+    username: ${MAIL_USER}
+    password: ${MAIL_PASS}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+logging:
+  level:
+    com.schoolerp: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN

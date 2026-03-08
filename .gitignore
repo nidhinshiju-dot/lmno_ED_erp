@@ -1,0 +1,53 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+*~
+.project
+.classpath
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# Gemini / AI Agent files
+.gemini/
+.agents/
+_agents/
+Architecture Design
+
+# Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Node modules and build files (in case they are at root)
+node_modules/
+dist/
+build/
+.next/
+
+# Java / Maven compiled files
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.log
+
+# Docker
+docker-compose.override.yml

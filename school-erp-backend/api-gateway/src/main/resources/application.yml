@@ -1,0 +1,44 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+      routes:
+        - id: core-service
+          uri: ${CORE_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/students/**,/api/v1/staff/**,/api/v1/classes/**,/api/v1/sections/**,/api/v1/schools/**,/api/v1/assistant/**,/api/v1/timetable/**,/api/v1/teacher/**,/api/v1/subjects/**,/api/v1/attendance/**,/api/v1/exams/**,/api/v1/announcements/**,/api/v1/notifications/**,/api/v1/files/**,/api/v1/reports/**,/api/v1/school-management/**
+
+        - id: lms-service
+          uri: ${LMS_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/courses/**,/api/v1/lessons/**,/api/v1/assignments/**,/api/v1/submissions/**
+            
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/auth/**
+
+        - id: fee-service
+          uri: ${FEE_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/fees/**,/api/v1/invoices/**,/api/v1/payments/**
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
