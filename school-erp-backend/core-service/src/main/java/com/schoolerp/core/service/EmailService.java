@@ -3,29 +3,24 @@ package com.schoolerp.core.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 public class EmailService {
-
-    private final JavaMailSender emailSender;
 
     @Value("${spring.mail.username:noreply@schoolerp.app}")
     private String fromEmail;
 
     public void sendEmail(String to, String subject, String text) {
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
-            message.setTo(to);
-            message.setSubject(subject);
-            message.setText(text);
-            emailSender.send(message);
+            System.out.println("============== MOCK EMAIL ==============");
+            System.out.println("From: " + fromEmail);
+            System.out.println("To: " + to);
+            System.out.println("Subject: " + subject);
+            System.out.println("Body: " + text);
+            System.out.println("========================================");
         } catch (Exception e) {
-            // Log error but don't fail the business transaction if email fails
-            System.err.println("Failed to send email to " + to + ": " + e.getMessage());
+            System.err.println("Failed to simulate email to " + to + ": " + e.getMessage());
         }
     }
 

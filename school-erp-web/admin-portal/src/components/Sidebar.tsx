@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, GraduationCap, Calendar, BookOpen, Settings, IndianRupee, ClipboardCheck, BookMarked, CheckSquare, FileText, Megaphone, BarChart3, FolderOpen, Building2, Receipt, ChevronRight, Layers, Bell } from "lucide-react";
+import { LayoutDashboard, Users, GraduationCap, Calendar, BookOpen, Settings, IndianRupee, ClipboardCheck, BookMarked, CheckSquare, FileText, Megaphone, BarChart3, FolderOpen, Building2, Receipt, ChevronRight, Layers, Bell, Clock, UserCheck, DoorOpen } from "lucide-react";
 
 const menuGroups = [
     {
@@ -14,43 +14,49 @@ const menuGroups = [
     {
         label: "Academic",
         items: [
-            { icon: GraduationCap,   label: "Students",           href: "/students" },
-            { icon: Layers,          label: "Classes",            href: "/classes" },
-            { icon: BookOpen,        label: "Courses & LMS",      href: "/courses" },
-            { icon: BookMarked,      label: "Subjects",           href: "/subjects" },
-            { icon: CheckSquare,     label: "Attendance",         href: "/attendance" },
-            { icon: FileText,        label: "Examinations",       href: "/exams" },
-            { icon: Calendar,        label: "Timetable",          href: "/timetable" },
+            { icon: GraduationCap, label: "Students", href: "/students" },
+            { icon: Layers, label: "Classes", href: "/classes" },
+            { icon: BookOpen, label: "Courses & LMS", href: "/courses" },
+            { icon: BookMarked, label: "Subjects", href: "/subjects" },
+            { icon: CheckSquare, label: "Attendance", href: "/attendance" },
+            { icon: FileText, label: "Examinations", href: "/exams" },
+            {
+                icon: Calendar, label: "Timetable", href: "/timetable", subItems: [
+                    { icon: Clock, label: "Schedule Config", href: "/timetable/schedule-config" },
+                    { icon: UserCheck, label: "Class Assignments", href: "/timetable/class-assignments" },
+                    { icon: DoorOpen, label: "Rooms", href: "/timetable/rooms" },
+                ]
+            },
         ]
     },
     {
         label: "Administration",
         items: [
-            { icon: Users,           label: "Staff Directory",    href: "/staff" },
-            { icon: ClipboardCheck,  label: "Teacher Assignment", href: "/assign-teacher" },
-            { icon: Building2,       label: "Campuses",           href: "/campuses" },
-            { icon: Calendar,        label: "Academic Calendar",  href: "/calendar" },
+            { icon: Users, label: "Staff Directory", href: "/staff" },
+            { icon: ClipboardCheck, label: "Teacher Assignment", href: "/assign-teacher" },
+            { icon: Building2, label: "Campuses", href: "/campuses" },
+            { icon: Calendar, label: "Academic Calendar", href: "/calendar" },
         ]
     },
     {
         label: "Finance",
         items: [
-            { icon: IndianRupee,     label: "Fee Structures",     href: "/fees" },
-            { icon: Receipt,         label: "Invoices",           href: "/invoices" },
+            { icon: IndianRupee, label: "Fee Structures", href: "/fees" },
+            { icon: Receipt, label: "Invoices", href: "/invoices" },
         ]
     },
     {
         label: "Communication",
         items: [
-            { icon: Megaphone,       label: "Announcements",      href: "/announcements" },
-            { icon: Bell,            label: "Push Notifications", href: "/notifications" },
-            { icon: FolderOpen,      label: "Files & Docs",       href: "/files" },
+            { icon: Megaphone, label: "Announcements", href: "/announcements" },
+            { icon: Bell, label: "Push Notifications", href: "/notifications" },
+            { icon: FolderOpen, label: "Files & Docs", href: "/files" },
         ]
     },
     {
         label: "Reporting",
         items: [
-            { icon: BarChart3,       label: "Reports",            href: "/reports" },
+            { icon: BarChart3, label: "Reports", href: "/reports" },
         ]
     },
 ];
@@ -91,15 +97,16 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
                             {group.items.map((item) => {
                                 const Icon = item.icon;
                                 const active = isActive(item.href);
+                                const hasSubItems = (item as any).subItems;
+                                const subActive = hasSubItems && (item as any).subItems.some((s: any) => pathname.startsWith(s.href));
                                 return (
                                     <li key={item.label}>
                                         <Link
                                             href={item.href}
-                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 group ${
-                                                active
+                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-150 group ${active
                                                     ? "bg-[#EFF6FF] text-[#2563EB] font-medium"
                                                     : "text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
-                                            } ${!isOpen ? 'justify-center px-0' : ''}`}
+                                                } ${!isOpen ? 'justify-center px-0' : ''}`}
                                             title={!isOpen ? item.label : undefined}
                                         >
                                             <Icon className={`w-5 h-5 flex-shrink-0 ${active ? "text-[#2563EB]" : "text-[#94A3B8] group-hover:text-[#475569]"}`} />
@@ -110,6 +117,29 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
                                                 </>
                                             )}
                                         </Link>
+                                        {/* Sub-items (shown when parent is active) */}
+                                        {isOpen && hasSubItems && (active || subActive) && (
+                                            <ul className="ml-8 mt-0.5 space-y-0.5 border-l-2 border-[#EFF6FF] pl-2">
+                                                {(item as any).subItems.map((sub: any) => {
+                                                    const SubIcon = sub.icon;
+                                                    const subIsActive = pathname.startsWith(sub.href);
+                                                    return (
+                                                        <li key={sub.label}>
+                                                            <Link
+                                                                href={sub.href}
+                                                                className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all duration-150 ${subIsActive
+                                                                        ? "bg-[#DBEAFE] text-[#1D4ED8] font-medium"
+                                                                        : "text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
+                                                                    }`}
+                                                            >
+                                                                <SubIcon className={`w-3.5 h-3.5 flex-shrink-0 ${subIsActive ? "text-[#1D4ED8]" : "text-[#94A3B8]"}`} />
+                                                                <span className="truncate">{sub.label}</span>
+                                                            </Link>
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        )}
                                     </li>
                                 );
                             })}
@@ -120,24 +150,23 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
 
             {/* Bottom: Settings & Copyright */}
             <div className="border-t border-[#E2E8F0] flex-shrink-0 p-3 space-y-2">
-                    <Link
-                        href="/settings"
-                        className={`flex items-center gap-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${
-                            isActive("/settings")
-                                ? "bg-[#EFF6FF] text-[#2563EB] font-medium"
-                                : "text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+                <Link
+                    href="/settings"
+                    className={`flex items-center gap-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${isActive("/settings")
+                            ? "bg-[#EFF6FF] text-[#2563EB] font-medium"
+                            : "text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
                         } ${!isOpen ? 'justify-center px-0' : 'px-3'}`}
-                        title={!isOpen ? "Settings" : undefined}
-                    >
-                        <Settings className="w-5 h-5" />
-                        {isOpen && <span>Settings</span>}
-                    </Link>
-                    {isOpen && (
-                        <div className="text-center pt-2">
-                            <p className="text-[10px] text-[#94A3B8] font-medium">© 2026 Lmno Corp.</p>
-                            <p className="text-[9px] text-[#CBD5E1]">All rights reserved.</p>
-                        </div>
-                    )}
+                    title={!isOpen ? "Settings" : undefined}
+                >
+                    <Settings className="w-5 h-5" />
+                    {isOpen && <span>Settings</span>}
+                </Link>
+                {isOpen && (
+                    <div className="text-center pt-2">
+                        <p className="text-[10px] text-[#94A3B8] font-medium">© 2026 Lmno Corp.</p>
+                        <p className="text-[9px] text-[#CBD5E1]">All rights reserved.</p>
+                    </div>
+                )}
             </div>
         </aside>
     );

@@ -43,6 +43,7 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
 export const StudentService = {
     getAll: () => fetchWithAuth("/students"),
     getById: (id: string) => fetchWithAuth(`/students/${id}`),
+    update: (id: string, data: Record<string, unknown>) => fetchWithAuth(`/students/${id}`, { method: "PUT", body: JSON.stringify(data) }),
 };
 
 export const StaffService = {
@@ -93,10 +94,73 @@ export const InvoiceService = {
     recordPayment: (invoiceId: string, paymentData: Record<string, unknown>) => fetchWithAuth(`/invoices/${invoiceId}/pay`, { method: "POST", body: JSON.stringify(paymentData) }),
 };
 
+// ── Timetable Services ───────────────────────────────────────────────────────
+
+export const WorkingDayService = {
+    getAll: () => fetchWithAuth("/schedule/working-days"),
+    create: (data: Record<string, unknown>) => fetchWithAuth("/schedule/working-days", { method: "POST", body: JSON.stringify(data) }),
+    toggle: (id: string, isActive: boolean) => fetchWithAuth(`/schedule/working-days/${id}/toggle`, { method: "PATCH", body: JSON.stringify({ isActive }) }),
+    delete: (id: string) => fetchWithAuth(`/schedule/working-days/${id}`, { method: "DELETE" }),
+};
+
+export const PeriodBlockService = {
+    getAll: () => fetchWithAuth("/schedule/period-blocks"),
+    create: (data: Record<string, unknown>) => fetchWithAuth("/schedule/period-blocks", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) => fetchWithAuth(`/schedule/period-blocks/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    delete: (id: string) => fetchWithAuth(`/schedule/period-blocks/${id}`, { method: "DELETE" }),
+};
+
+export const ClassSubjectTeacherService = {
+    getByClass: (classId: string) => fetchWithAuth(`/class-subject-teachers/class/${classId}`),
+    getByTeacher: (teacherId: string) => fetchWithAuth(`/class-subject-teachers/teacher/${teacherId}`),
+    create: (data: Record<string, unknown>) => fetchWithAuth("/class-subject-teachers", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) => fetchWithAuth(`/class-subject-teachers/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    delete: (id: string) => fetchWithAuth(`/class-subject-teachers/${id}`, { method: "DELETE" }),
+};
+
+export const RoomService = {
+    getAll: () => fetchWithAuth("/rooms"),
+    getByType: (roomTypeId: string) => fetchWithAuth(`/rooms/by-type/${roomTypeId}`),
+    create: (data: Record<string, unknown>) => fetchWithAuth("/rooms", { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Record<string, unknown>) => fetchWithAuth(`/rooms/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    delete: (id: string) => fetchWithAuth(`/rooms/${id}`, { method: "DELETE" }),
+    getRoomTypes: () => fetchWithAuth("/rooms/types"),
+    createRoomType: (data: Record<string, unknown>) => fetchWithAuth("/rooms/types", { method: "POST", body: JSON.stringify(data) }),
+    deleteRoomType: (id: string) => fetchWithAuth(`/rooms/types/${id}`, { method: "DELETE" }),
+    getRequirements: () => fetchWithAuth("/rooms/requirements"),
+    createRequirement: (data: Record<string, unknown>) => fetchWithAuth("/rooms/requirements", { method: "POST", body: JSON.stringify(data) }),
+    deleteRequirement: (id: string) => fetchWithAuth(`/rooms/requirements/${id}`, { method: "DELETE" }),
+};
+
 export const TimetableService = {
     getAll: () => fetchWithAuth("/timetable"),
-    getByClass: (classId: string) => fetchWithAuth(`/timetable/class/${classId}`),
     create: (data: Record<string, unknown>) => fetchWithAuth("/timetable", { method: "POST", body: JSON.stringify(data) }),
+    publish: (id: string) => fetchWithAuth(`/timetable/${id}/publish`, { method: "POST" }),
+    delete: (id: string) => fetchWithAuth(`/timetable/${id}`, { method: "DELETE" }),
+    generate: (id: string) => fetchWithAuth(`/timetable/${id}/generate`, { method: "POST" }),
+    getAllSlots: (timetableId: string) => fetchWithAuth(`/timetable/${timetableId}/slots`),
+    getByClass: (timetableId: string, classId: string) => fetchWithAuth(`/timetable/${timetableId}/class/${classId}`),
+    getByTeacher: (timetableId: string, teacherId: string) => fetchWithAuth(`/timetable/${timetableId}/teacher/${teacherId}`),
+    updateSlot: (slotId: string, data: Record<string, unknown>) => fetchWithAuth(`/timetable/slot/${slotId}`, { method: "PUT", body: JSON.stringify(data) }),
+    deleteSlot: (slotId: string) => fetchWithAuth(`/timetable/slot/${slotId}`, { method: "DELETE" }),
+    createSlot: (data: Record<string, unknown>) => fetchWithAuth(`/timetable/slot`, { method: "POST", body: JSON.stringify(data) }),
+    toggleLock: (slotId: string) => fetchWithAuth(`/timetable/slot/${slotId}/lock`, { method: "POST" }),
+    deleteTimetable: (id: string) => fetchWithAuth(`/timetable/${id}`, { method: "DELETE" }),
+};
+
+export const SubstitutionService = {
+    getByDate: (date: string) => fetchWithAuth(`/substitutions/date/${date}`),
+    create: (data: Record<string, unknown>) => fetchWithAuth("/substitutions", { method: "POST", body: JSON.stringify(data) }),
+    confirm: (id: string, substituteTeacherId: string) => fetchWithAuth(`/substitutions/${id}/confirm`, { method: "POST", body: JSON.stringify({ substituteTeacherId }) }),
+    cancel: (id: string) => fetchWithAuth(`/substitutions/${id}/cancel`, { method: "POST" }),
+    suggest: (timetableId: string, originalTeacherId: string, blockId: string, date: string) =>
+        fetchWithAuth(`/substitutions/suggest?timetableId=${timetableId}&originalTeacherId=${originalTeacherId}&blockId=${blockId}&date=${date}`),
+};
+
+export const TeacherAvailabilityService = {
+    getByTeacher: (teacherId: string) => fetchWithAuth(`/teacher-availability/teacher/${teacherId}`),
+    save: (data: Record<string, unknown>) => fetchWithAuth("/teacher-availability", { method: "POST", body: JSON.stringify(data) }),
+    delete: (id: string) => fetchWithAuth(`/teacher-availability/${id}`, { method: "DELETE" }),
 };
 
 export const TeacherService = {

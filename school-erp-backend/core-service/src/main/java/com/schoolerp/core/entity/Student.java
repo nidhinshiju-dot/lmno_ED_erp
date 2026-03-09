@@ -44,11 +44,16 @@ public class Student {
     @Column(nullable = false)
     private String status; // ACTIVE, INACTIVE, ALUMNI, TRANSFERRED
 
+    @Column(name = "photo_url")
+    private String photoUrl;
+
     @PrePersist
     void prePersist() {
-        if (status == null) status = "ACTIVE";
+        if (status == null)
+            status = "ACTIVE";
         if (admissionNumber == null || admissionNumber.trim().isEmpty()) {
-            String datePrefix = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+            String datePrefix = java.time.LocalDate.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
             int randomSeq = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 9999);
             admissionNumber = datePrefix + randomSeq;
         }

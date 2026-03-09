@@ -53,15 +53,23 @@ public class StaffController {
     public ResponseEntity<Staff> updateStaff(
             @PathVariable String id, @RequestBody Staff body) {
         return staffRepository.findById(id).map(staff -> {
-            if (body.getName() != null)        staff.setName(body.getName());
-            if (body.getDepartment() != null)  staff.setDepartment(body.getDepartment());
-            if (body.getDesignation() != null) staff.setDesignation(body.getDesignation());
-            if (body.getRole() != null)        staff.setRole(body.getRole());
-            if (body.getEmail() != null)       staff.setEmail(body.getEmail());
-            if (body.getPhone() != null)       staff.setPhone(body.getPhone());
-            if (body.getStatus() != null)      staff.setStatus(body.getStatus());
+            if (body.getName() != null)
+                staff.setName(body.getName());
+            if (body.getDepartment() != null)
+                staff.setDepartment(body.getDepartment());
+            if (body.getDesignation() != null)
+                staff.setDesignation(body.getDesignation());
+            if (body.getRole() != null)
+                staff.setRole(body.getRole());
+            if (body.getEmail() != null)
+                staff.setEmail(body.getEmail());
+            if (body.getPhone() != null)
+                staff.setPhone(body.getPhone());
+            if (body.getStatus() != null)
+                staff.setStatus(body.getStatus());
+            if (body.getSubjects() != null)
+                staff.setSubjects(body.getSubjects());
             return ResponseEntity.ok(staffRepository.save(staff));
         }).orElse(ResponseEntity.notFound().build());
     }
 }
-

@@ -42,14 +42,20 @@ public class Staff {
     /** B1/B6 — Account activation status: ACTIVE, INACTIVE */
     private String status;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "staff_subjects", joinColumns = @JoinColumn(name = "staff_id"))
+    @Column(name = "subject_id")
+    private java.util.List<String> subjects;
+
     @PrePersist
     void prePersist() {
-        if (status == null) status = "ACTIVE";
+        if (status == null)
+            status = "ACTIVE";
         if (employeeId == null || employeeId.trim().isEmpty()) {
-            String datePrefix = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+            String datePrefix = java.time.LocalDate.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
             int randomSeq = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 9999);
             employeeId = datePrefix + randomSeq;
         }
     }
 }
-

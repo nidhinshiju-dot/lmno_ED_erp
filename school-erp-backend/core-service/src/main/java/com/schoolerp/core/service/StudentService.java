@@ -46,6 +46,7 @@ public class StudentService {
             s.setParentContact(updated.getParentContact());
             s.setParentId(updated.getParentId());
             s.setClassId(updated.getClassId());
+            s.setPhotoUrl(updated.getPhotoUrl());
             return studentRepository.save(s);
         }).orElseThrow(() -> new RuntimeException("Student not found"));
     }

@@ -171,3 +171,102 @@ CREATE TABLE IF NOT EXISTS notifications (
     read BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Timetable Module
+CREATE TABLE IF NOT EXISTS working_days (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    day_name VARCHAR NOT NULL,
+    day_order INTEGER,
+    is_active BOOLEAN DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS period_blocks (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    block_name VARCHAR NOT NULL,
+    block_type VARCHAR NOT NULL,
+    start_time VARCHAR,
+    end_time VARCHAR,
+    order_index INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS timetables (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    academic_year VARCHAR NOT NULL,
+    term VARCHAR,
+    status VARCHAR NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS class_subject_teachers (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    class_id VARCHAR NOT NULL,
+    subject_id VARCHAR NOT NULL,
+    teacher_id VARCHAR NOT NULL,
+    periods_per_week INTEGER DEFAULT 1,
+    priority INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS class_timetables (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    timetable_id VARCHAR NOT NULL,
+    class_id VARCHAR NOT NULL,
+    day_id VARCHAR NOT NULL,
+    block_id VARCHAR NOT NULL,
+    class_subject_teacher_id VARCHAR NOT NULL,
+    room_id VARCHAR,
+    is_locked BOOLEAN DEFAULT false
+);
+
+CREATE TABLE IF NOT EXISTS teacher_schedules (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    teacher_id VARCHAR NOT NULL,
+    day_id VARCHAR NOT NULL,
+    block_id VARCHAR NOT NULL,
+    class_id VARCHAR NOT NULL,
+    subject_id VARCHAR NOT NULL,
+    room_id VARCHAR,
+    timetable_id VARCHAR NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS teacher_availabilities (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    teacher_id VARCHAR NOT NULL,
+    day_id VARCHAR NOT NULL,
+    block_id VARCHAR NOT NULL,
+    is_available BOOLEAN DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS room_types (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    type_name VARCHAR NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS rooms (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    room_name VARCHAR NOT NULL,
+    room_type_id VARCHAR NOT NULL,
+    capacity INTEGER DEFAULT 30,
+    building VARCHAR,
+    floor VARCHAR,
+    is_active BOOLEAN DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS subject_room_requirements (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    subject_id VARCHAR NOT NULL,
+    room_type_id VARCHAR NOT NULL,
+    is_required BOOLEAN DEFAULT true
+);
+
+CREATE TABLE IF NOT EXISTS substitutions (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    date DATE NOT NULL,
+    class_id VARCHAR NOT NULL,
+    block_id VARCHAR NOT NULL,
+    original_teacher_id VARCHAR NOT NULL,
+    substitute_teacher_id VARCHAR,
+    reason VARCHAR,
+    created_at TIMESTAMP DEFAULT NOW()
+);
