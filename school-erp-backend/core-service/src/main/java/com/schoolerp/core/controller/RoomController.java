@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/rooms")
@@ -25,7 +26,7 @@ public class RoomController {
     }
 
     @PostMapping("/types")
-    public RoomType createRoomType(@RequestBody RoomType rt) {
+    public RoomType createRoomType(@Valid @RequestBody RoomType rt) {
         return service.saveRoomType(rt);
     }
 
@@ -48,12 +49,12 @@ public class RoomController {
     }
 
     @PostMapping
-    public Room createRoom(@RequestBody Room room) {
+    public Room createRoom(@Valid @RequestBody Room room) {
         return service.saveRoom(room);
     }
 
     @PutMapping("/{id}")
-    public Room updateRoom(@PathVariable String id, @RequestBody Room room) {
+    public Room updateRoom(@PathVariable String id, @Valid @RequestBody Room room) {
         return service.updateRoom(id, room);
     }
 
@@ -71,7 +72,7 @@ public class RoomController {
     }
 
     @PostMapping("/requirements")
-    public SubjectRoomRequirement createRequirement(@RequestBody SubjectRoomRequirement req) {
+    public SubjectRoomRequirement createRequirement(@Valid @RequestBody SubjectRoomRequirement req) {
         return service.saveRequirement(req);
     }
 

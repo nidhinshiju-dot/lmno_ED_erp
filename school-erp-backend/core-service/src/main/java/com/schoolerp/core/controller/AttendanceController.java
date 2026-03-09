@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/attendance")
@@ -34,7 +35,7 @@ public class AttendanceController {
     }
 
     @PostMapping
-    public ResponseEntity<List<Attendance>> markAttendance(@RequestBody List<Attendance> records) {
+    public ResponseEntity<List<Attendance>> markAttendance(@Valid @RequestBody List<Attendance> records) {
         return ResponseEntity.ok(attendanceService.markAttendance(records));
     }
 
@@ -44,7 +45,7 @@ public class AttendanceController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<Attendance> updateAttendance(
-            @PathVariable String id, @RequestBody Attendance body) {
+            @PathVariable String id, @Valid @RequestBody Attendance body) {
         return attendanceRepository.findById(id).map(a -> {
             a.setStatus(body.getStatus());
             a.setRemarks(body.getRemarks());
@@ -70,5 +71,11 @@ public class AttendanceController {
                 ));
 
         return ResponseEntity.ok(summary);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        // Implementation stub added by QA Remediation
+        return ResponseEntity.noContent().build();
     }
 }

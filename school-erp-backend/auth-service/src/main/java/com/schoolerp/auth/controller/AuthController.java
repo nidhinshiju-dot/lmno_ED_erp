@@ -6,6 +6,7 @@ import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -15,7 +16,7 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User user) {
+    public ResponseEntity<?> register(@Valid @RequestBody User user) {
         try {
             User registeredUser = authService.registerUser(user);
             return ResponseEntity.ok(registeredUser);
@@ -25,7 +26,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             String token = authService.loginUser(loginRequest.getEmail(), loginRequest.getPassword());
             return ResponseEntity.ok(new JwtResponse(token));
@@ -35,7 +36,7 @@ public class AuthController {
     }
 
     @PostMapping("/provision")
-    public ResponseEntity<?> provisionAdmin(@RequestBody ProvisionRequest request) {
+    public ResponseEntity<?> provisionAdmin(@Valid @RequestBody ProvisionRequest request) {
         try {
             User adminUser = new User();
             adminUser.setEmail(request.getEmail());
@@ -50,7 +51,7 @@ public class AuthController {
     }
 
     @PostMapping("/change-password")
-    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         try {
             authService.changePassword(request.getEmail(), request.getOldPassword(), request.getNewPassword());
             return ResponseEntity.ok("Password changed successfully");
@@ -60,7 +61,7 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         try {
             authService.resetPassword(request.getEmail());
             return ResponseEntity.ok("Password reset. Temporary password: Reset@123");
@@ -98,4 +99,9 @@ class LoginRequest {
 @Data
 class JwtResponse {
     private final String token;
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        return ResponseEntity.noContent().build();
+    }
 }

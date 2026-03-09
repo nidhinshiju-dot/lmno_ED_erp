@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/school-management")
@@ -27,7 +28,7 @@ public class SchoolManagementController {
     }
 
     @PostMapping("/campuses")
-    public ResponseEntity<Campus> createCampus(@RequestBody Campus campus) {
+    public ResponseEntity<Campus> createCampus(@Valid @RequestBody Campus campus) {
         return ResponseEntity.ok(campusRepository.save(campus));
     }
 
@@ -45,7 +46,7 @@ public class SchoolManagementController {
     }
 
     @PostMapping("/calendar")
-    public ResponseEntity<AcademicEvent> createEvent(@RequestBody AcademicEvent event) {
+    public ResponseEntity<AcademicEvent> createEvent(@Valid @RequestBody AcademicEvent event) {
         return ResponseEntity.ok(academicEventRepository.save(event));
     }
 

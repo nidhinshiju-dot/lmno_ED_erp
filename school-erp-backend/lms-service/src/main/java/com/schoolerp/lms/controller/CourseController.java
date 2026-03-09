@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/courses")
@@ -34,12 +35,12 @@ public class CourseController {
     }
 
     @PostMapping
-    public Course createCourse(@RequestBody Course course) {
+    public Course createCourse(@Valid @RequestBody Course course) {
         return courseService.createCourse(course);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Course> updateCourse(@PathVariable String id, @RequestBody Course body) {
+    public ResponseEntity<Course> updateCourse(@PathVariable String id, @Valid @RequestBody Course body) {
         return courseService.getCourseById(id).map(course -> {
             course.setTitle(body.getTitle());
             course.setDescription(body.getDescription());

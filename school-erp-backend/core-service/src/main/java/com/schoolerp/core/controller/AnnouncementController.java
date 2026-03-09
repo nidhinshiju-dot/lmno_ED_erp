@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/announcements")
@@ -30,7 +31,7 @@ public class AnnouncementController {
     private com.schoolerp.core.service.PushNotificationService pushNotificationService;
 
     @PostMapping
-    public ResponseEntity<Announcement> create(@RequestBody Announcement announcement) {
+    public ResponseEntity<Announcement> create(@Valid @RequestBody Announcement announcement) {
         Announcement saved = announcementService.create(announcement);
         
         // Trigger push notification based on scope and roles

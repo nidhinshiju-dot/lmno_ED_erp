@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/classes")
@@ -28,7 +29,7 @@ public class SchoolClassController {
     }
 
     @PostMapping
-    public SchoolClass createClass(@RequestBody SchoolClass schoolClass) {
+    public SchoolClass createClass(@Valid @RequestBody SchoolClass schoolClass) {
         return schoolClassService.createClass(schoolClass);
     }
 

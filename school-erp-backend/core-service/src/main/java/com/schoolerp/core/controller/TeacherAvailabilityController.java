@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/teacher-availability")
@@ -21,7 +22,7 @@ public class TeacherAvailabilityController {
     }
 
     @PostMapping
-    public TeacherAvailability save(@RequestBody TeacherAvailability availability) {
+    public TeacherAvailability save(@Valid @RequestBody TeacherAvailability availability) {
         return service.save(availability);
     }
 

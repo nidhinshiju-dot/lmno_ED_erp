@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/timetable")
@@ -29,7 +30,7 @@ public class TimetableController {
     }
 
     @PostMapping
-    public Timetable create(@RequestBody Timetable timetable) {
+    public Timetable create(@Valid @RequestBody Timetable timetable) {
         return timetableService.createTimetable(timetable);
     }
 
@@ -73,7 +74,7 @@ public class TimetableController {
     // ── Manual Slot Edit ──────────────────────────────────────────────────────
 
     @PostMapping("/slot")
-    public TimetableSlotDto createSlot(@RequestBody Map<String, String> body) {
+    public TimetableSlotDto createSlot(@Valid @RequestBody Map<String, String> body) {
         return timetableService.createSlot(
                 body.get("timetableId"),
                 body.get("classId"),
@@ -86,7 +87,7 @@ public class TimetableController {
     @PutMapping("/slot/{slotId}")
     public TimetableSlotDto updateSlot(
             @PathVariable("slotId") String slotId,
-            @RequestBody Map<String, String> body) {
+            @Valid @RequestBody Map<String, String> body) {
         return timetableService.updateSlot(
                 slotId,
                 body.get("classSubjectTeacherId"),

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/assistant")
@@ -19,7 +20,7 @@ public class AssistantController {
     private final StudentService studentService;
 
     @PostMapping("/chat")
-    public ResponseEntity<Map<String, Object>> chat(@RequestBody ChatRequest request) {
+    public ResponseEntity<Map<String, Object>> chat(@Valid @RequestBody ChatRequest request) {
         String message = request.getMessage().toLowerCase().trim();
         Map<String, Object> response = new HashMap<>();
 

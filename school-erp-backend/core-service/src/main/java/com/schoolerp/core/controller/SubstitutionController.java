@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/substitutions")
@@ -26,13 +27,13 @@ public class SubstitutionController {
     }
 
     @PostMapping
-    public Substitution create(@RequestBody Substitution sub) {
+    public Substitution create(@Valid @RequestBody Substitution sub) {
         return service.create(sub);
     }
 
     @PostMapping("/{id}/confirm")
     public Substitution confirm(@PathVariable String id,
-            @RequestBody Map<String, String> body) {
+            @Valid @RequestBody Map<String, String> body) {
         return service.confirm(id, body.get("substituteTeacherId"));
     }
 

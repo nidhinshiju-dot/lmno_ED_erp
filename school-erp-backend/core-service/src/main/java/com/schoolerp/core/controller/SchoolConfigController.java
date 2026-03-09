@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/school-config")
@@ -33,7 +34,7 @@ public class SchoolConfigController {
     }
 
     @PostMapping("/academic-years")
-    public ResponseEntity<AcademicYear> createAcademicYear(@RequestBody AcademicYear body) {
+    public ResponseEntity<AcademicYear> createAcademicYear(@Valid @RequestBody AcademicYear body) {
         // If this is being marked current, clear old current
         if (Boolean.TRUE.equals(body.getIsCurrent())) {
             academicYearRepository.findByIsCurrentTrue().ifPresent(existing -> {
@@ -46,7 +47,7 @@ public class SchoolConfigController {
 
     @PutMapping("/academic-years/{id}")
     public ResponseEntity<AcademicYear> updateAcademicYear(
-            @PathVariable String id, @RequestBody AcademicYear body) {
+            @PathVariable String id, @Valid @RequestBody AcademicYear body) {
         return academicYearRepository.findById(id).map(ay -> {
             // If setting as current, clear previous
             if (Boolean.TRUE.equals(body.getIsCurrent()) && !Boolean.TRUE.equals(ay.getIsCurrent())) {
@@ -85,7 +86,7 @@ public class SchoolConfigController {
     @PutMapping("/settings")
     public ResponseEntity<SchoolSettings> saveSettings(
             @RequestHeader(value = "X-Tenant-ID", defaultValue = "TENANT_001") String tenantId,
-            @RequestBody SchoolSettings body) {
+            @Valid @RequestBody SchoolSettings body) {
         SchoolSettings settings = schoolSettingsRepository.findByTenantId(tenantId)
                 .orElse(new SchoolSettings());
 

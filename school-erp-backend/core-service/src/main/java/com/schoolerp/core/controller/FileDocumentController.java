@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/files")
@@ -58,7 +59,7 @@ public class FileDocumentController {
     }
 
     @PostMapping
-    public ResponseEntity<FileDocument> create(@RequestBody FileDocument doc) {
+    public ResponseEntity<FileDocument> create(@Valid @RequestBody FileDocument doc) {
         return ResponseEntity.ok(fileDocumentService.create(doc));
     }
 

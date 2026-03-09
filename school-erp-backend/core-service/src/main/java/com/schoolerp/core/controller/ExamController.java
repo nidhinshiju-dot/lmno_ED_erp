@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/exams")
@@ -39,7 +40,7 @@ public class ExamController {
     }
 
     @PostMapping
-    public ResponseEntity<Exam> create(@RequestBody Exam exam) {
+    public ResponseEntity<Exam> create(@Valid @RequestBody Exam exam) {
         return ResponseEntity.ok(examService.create(exam));
     }
 
@@ -54,7 +55,7 @@ public class ExamController {
     }
 
     @PostMapping("/{examId}/results")
-    public ResponseEntity<List<ExamResult>> saveResults(@RequestBody List<ExamResult> results) {
+    public ResponseEntity<List<ExamResult>> saveResults(@Valid @RequestBody List<ExamResult> results) {
         return ResponseEntity.ok(examService.saveResults(results));
     }
 

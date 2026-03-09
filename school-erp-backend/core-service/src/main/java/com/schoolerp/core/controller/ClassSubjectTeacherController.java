@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/class-subject-teachers")
@@ -27,13 +28,13 @@ public class ClassSubjectTeacherController {
     }
 
     @PostMapping
-    public ResponseEntity<ClassSubjectTeacherDto> create(@RequestBody ClassSubjectTeacher assignment) {
+    public ResponseEntity<ClassSubjectTeacherDto> create(@Valid @RequestBody ClassSubjectTeacher assignment) {
         return ResponseEntity.ok(service.create(assignment));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ClassSubjectTeacherDto> update(@PathVariable("id") String id,
-            @RequestBody ClassSubjectTeacher assignment) {
+            @Valid @RequestBody ClassSubjectTeacher assignment) {
         return ResponseEntity.ok(service.update(id, assignment));
     }
 

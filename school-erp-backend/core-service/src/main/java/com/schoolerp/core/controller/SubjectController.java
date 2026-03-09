@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/subjects")
@@ -28,12 +29,12 @@ public class SubjectController {
     }
 
     @PostMapping
-    public ResponseEntity<Subject> create(@RequestBody Subject subject) {
+    public ResponseEntity<Subject> create(@Valid @RequestBody Subject subject) {
         return ResponseEntity.ok(subjectService.create(subject));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Subject> update(@PathVariable("id") String id, @RequestBody Subject subject) {
+    public ResponseEntity<Subject> update(@PathVariable("id") String id, @Valid @RequestBody Subject subject) {
         return ResponseEntity.ok(subjectService.update(id, subject));
     }
 

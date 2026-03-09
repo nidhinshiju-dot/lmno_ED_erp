@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 /**
  * A6 — Course Modules API.
@@ -35,13 +36,13 @@ public class CourseModuleController {
 
     /** Create a module */
     @PostMapping
-    public ResponseEntity<CourseModule> create(@RequestBody CourseModule module) {
+    public ResponseEntity<CourseModule> create(@Valid @RequestBody CourseModule module) {
         return ResponseEntity.ok(moduleRepository.save(module));
     }
 
     /** Edit a module */
     @PutMapping("/{id}")
-    public ResponseEntity<CourseModule> update(@PathVariable String id, @RequestBody CourseModule body) {
+    public ResponseEntity<CourseModule> update(@PathVariable String id, @Valid @RequestBody CourseModule body) {
         return moduleRepository.findById(id).map(m -> {
             m.setTitle(body.getTitle());
             m.setDescription(body.getDescription());
@@ -50,10 +51,19 @@ public class CourseModuleController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
+    @Autowired
+    private com.schoolerp.lms.repository.LessonRepository lessonRepository;
+
     /** Delete a module */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable String id) {
         if (moduleRepository.findById(id).isEmpty()) return ResponseEntity.notFound().build();
+        
+        // Prevent deletion if lessons exist inside this module
+        if (!lessonRepository.findByModuleIdOrderByOrderIndexAsc(id).isEmpty()) {
+            throw new org.springframework.dao.DataIntegrityViolationException("Cannot delete module. It still contains active lessons.");
+        }
+        
         moduleRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }

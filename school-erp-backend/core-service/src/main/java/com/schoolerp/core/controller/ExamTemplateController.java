@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/exam-templates")
@@ -25,7 +26,7 @@ public class ExamTemplateController {
     }
 
     @PostMapping
-    public ResponseEntity<ExamTemplate> createTemplate(@RequestBody ExamTemplate template) {
+    public ResponseEntity<ExamTemplate> createTemplate(@Valid @RequestBody ExamTemplate template) {
         return ResponseEntity.ok(templateService.createTemplate(template));
     }
 
@@ -35,7 +36,7 @@ public class ExamTemplateController {
     }
 
     @PostMapping("/{id}/subjects")
-    public ResponseEntity<ExamTemplateSubject> addSubject(@PathVariable String id, @RequestBody ExamTemplateSubject subject) {
+    public ResponseEntity<ExamTemplateSubject> addSubject(@PathVariable String id, @Valid @RequestBody ExamTemplateSubject subject) {
         subject.setTemplateId(id);
         return ResponseEntity.ok(templateService.addSubjectToTemplate(subject));
     }
@@ -43,7 +44,7 @@ public class ExamTemplateController {
     @PostMapping("/{id}/generate")
     public ResponseEntity<Exam> generateExam(
             @PathVariable("id") String templateId,
-            @RequestBody Map<String, Object> payload) {
+            @Valid @RequestBody Map<String, Object> payload) {
         String classId = (String) payload.get("classId");
         String examName = (String) payload.get("examName");
         LocalDate startDate = LocalDate.parse((String) payload.get("startDate"));

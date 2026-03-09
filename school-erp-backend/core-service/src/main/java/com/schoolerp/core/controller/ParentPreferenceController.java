@@ -5,6 +5,7 @@ import com.schoolerp.core.repository.ParentNotificationPreferenceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 /**
  * A4/A5 — Parent notification settings and communication preferences.
@@ -33,7 +34,7 @@ public class ParentPreferenceController {
     @PutMapping("/{parentId}/preferences")
     public ResponseEntity<ParentNotificationPreference> savePreferences(
             @PathVariable String parentId,
-            @RequestBody ParentNotificationPreference body) {
+            @Valid @RequestBody ParentNotificationPreference body) {
 
         ParentNotificationPreference pref = prefRepo.findByParentId(parentId)
                 .orElse(new ParentNotificationPreference());

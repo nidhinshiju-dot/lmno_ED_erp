@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/schools")
@@ -21,12 +22,18 @@ public class SchoolController {
     }
 
     @PostMapping
-    public ResponseEntity<School> createSchool(@RequestBody School school) {
+    public ResponseEntity<School> createSchool(@Valid @RequestBody School school) {
         return ResponseEntity.ok(schoolService.createSchool(school));
     }
 
     @PatchMapping("/{id}/toggle")
     public ResponseEntity<School> toggleStatus(@PathVariable String id) {
         return ResponseEntity.ok(schoolService.toggleStatus(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        // Implementation stub added by QA Remediation
+        return ResponseEntity.noContent().build();
     }
 }

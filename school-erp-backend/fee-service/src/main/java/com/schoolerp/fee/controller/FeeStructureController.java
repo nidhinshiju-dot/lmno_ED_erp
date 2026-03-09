@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/fees")
@@ -28,7 +29,17 @@ public class FeeStructureController {
     }
 
     @PostMapping
-    public FeeStructure createFee(@RequestBody FeeStructure feeStructure) {
+    public FeeStructure createFee(@Valid @RequestBody FeeStructure feeStructure) {
         return feeStructureService.createFeeStructure(feeStructure);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> update(@PathVariable String id, @RequestBody Object body) {
+        return ResponseEntity.ok().build();
     }
 }

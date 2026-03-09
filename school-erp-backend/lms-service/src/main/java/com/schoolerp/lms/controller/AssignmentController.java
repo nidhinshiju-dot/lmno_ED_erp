@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/assignments")
@@ -39,13 +40,13 @@ public class AssignmentController {
     }
 
     @PostMapping
-    public Assignment createAssignment(@RequestBody Assignment assignment) {
+    public Assignment createAssignment(@Valid @RequestBody Assignment assignment) {
         return assignmentService.createAssignment(assignment);
     }
 
     /** A11 — Edit assignment */
     @PutMapping("/{id}")
-    public ResponseEntity<Assignment> updateAssignment(@PathVariable String id, @RequestBody Assignment body) {
+    public ResponseEntity<Assignment> updateAssignment(@PathVariable String id, @Valid @RequestBody Assignment body) {
         return assignmentService.getAssignmentById(id).map(a -> {
             a.setTitle(body.getTitle());
             a.setDescription(body.getDescription());
@@ -59,6 +60,12 @@ public class AssignmentController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteAssignment(@PathVariable String id) {
         if (assignmentService.getAssignmentById(id).isEmpty()) return ResponseEntity.notFound().build();
+        
+        // Prevent deletion if students have already submitted work
+        if (!submissionRepository.findByAssignmentId(id).isEmpty()) {
+             throw new org.springframework.dao.DataIntegrityViolationException("Cannot delete assignment. Students have already submitted work against it.");
+        }
+        
         assignmentRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
@@ -69,7 +76,7 @@ public class AssignmentController {
     }
 
     @PostMapping("/{assignmentId}/submit")
-    public ResponseEntity<Submission> submit(@PathVariable String assignmentId, @RequestBody Submission submission) {
+    public ResponseEntity<Submission> submit(@PathVariable String assignmentId, @Valid @RequestBody Submission submission) {
         var assignment = assignmentService.getAssignmentById(assignmentId);
         if (assignment.isEmpty()) return ResponseEntity.notFound().build();
         submission.setAssignment(assignment.get());
@@ -78,7 +85,7 @@ public class AssignmentController {
 
     @PatchMapping("/submissions/{submissionId}/grade")
     public ResponseEntity<Submission> gradeSubmission(
-            @PathVariable String submissionId, @RequestBody Map<String, Object> body) {
+            @PathVariable String submissionId, @Valid @RequestBody Map<String, Object> body) {
         return submissionRepository.findById(submissionId).map(sub -> {
             sub.setScore((Integer) body.get("score"));
             sub.setFeedback((String) body.get("feedback"));

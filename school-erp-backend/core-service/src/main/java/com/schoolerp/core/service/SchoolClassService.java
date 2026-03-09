@@ -20,6 +20,12 @@ public class SchoolClassService {
     @PersistenceContext
     private EntityManager entityManager;
 
+    @Autowired
+    private com.schoolerp.core.repository.StudentRepository studentRepository;
+
+    @Autowired
+    private com.schoolerp.core.repository.ClassSubjectRepository classSubjectRepository;
+
     public List<SchoolClass> getAllClasses() {
         return schoolClassRepository.findAll();
     }
@@ -41,6 +47,16 @@ public class SchoolClassService {
 
     @Transactional
     public void deleteClass(String id) {
+        List<com.schoolerp.core.entity.Student> activeStudents = studentRepository.findByClassId(id);
+        if (!activeStudents.isEmpty()) {
+            throw new org.springframework.dao.DataIntegrityViolationException("Cannot delete class. " + activeStudents.size() + " students are currently enrolled.");
+        }
+        
+        List<com.schoolerp.core.entity.ClassSubject> linkedSubjects = classSubjectRepository.findByClassId(id);
+        if (!linkedSubjects.isEmpty()) {
+            throw new org.springframework.dao.DataIntegrityViolationException("Cannot delete class. It currently has " + linkedSubjects.size() + " assigned subjects.");
+        }
+
         schoolClassRepository.deleteById(id);
     }
 }

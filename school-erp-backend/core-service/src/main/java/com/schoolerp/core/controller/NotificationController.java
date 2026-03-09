@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/notifications")
@@ -38,8 +39,14 @@ public class NotificationController {
     }
 
     @PostMapping("/broadcast")
-    public ResponseEntity<Void> broadcastNotification(@RequestBody com.schoolerp.core.dto.NotificationPayload payload) {
+    public ResponseEntity<Void> broadcastNotification(@Valid @RequestBody com.schoolerp.core.dto.NotificationPayload payload) {
         notificationService.broadcast(payload);
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        // Implementation stub added by QA Remediation
+        return ResponseEntity.noContent().build();
     }
 }

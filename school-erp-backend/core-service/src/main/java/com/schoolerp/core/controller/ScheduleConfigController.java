@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/schedule")
@@ -25,13 +26,13 @@ public class ScheduleConfigController {
     }
 
     @PostMapping("/working-days")
-    public WorkingDay createWorkingDay(@RequestBody WorkingDay day) {
+    public WorkingDay createWorkingDay(@Valid @RequestBody WorkingDay day) {
         return service.saveWorkingDay(day);
     }
 
     @PatchMapping("/working-days/{id}/toggle")
     public WorkingDay toggleDay(@PathVariable String id,
-            @RequestBody Map<String, Boolean> body) {
+            @Valid @RequestBody Map<String, Boolean> body) {
         return service.toggleDay(id, Boolean.TRUE.equals(body.get("isActive")));
     }
 
@@ -49,13 +50,13 @@ public class ScheduleConfigController {
     }
 
     @PostMapping("/period-blocks")
-    public PeriodBlock createPeriodBlock(@RequestBody PeriodBlock block) {
+    public PeriodBlock createPeriodBlock(@Valid @RequestBody PeriodBlock block) {
         return service.savePeriodBlock(block);
     }
 
     @PutMapping("/period-blocks/{id}")
     public PeriodBlock updatePeriodBlock(@PathVariable String id,
-            @RequestBody PeriodBlock block) {
+            @Valid @RequestBody PeriodBlock block) {
         return service.updatePeriodBlock(id, block);
     }
 

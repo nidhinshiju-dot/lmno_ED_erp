@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/lessons")
@@ -28,12 +29,12 @@ public class LessonController {
     }
 
     @PostMapping
-    public Lesson createLesson(@RequestBody Lesson lesson) {
+    public Lesson createLesson(@Valid @RequestBody Lesson lesson) {
         return lessonService.createLesson(lesson);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Lesson> updateLesson(@PathVariable String id, @RequestBody Lesson body) {
+    public ResponseEntity<Lesson> updateLesson(@PathVariable String id, @Valid @RequestBody Lesson body) {
         return lessonService.getLessonById(id).map(lesson -> {
             lesson.setTitle(body.getTitle());
             lesson.setContentUrl(body.getContentUrl());

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/class-subjects")
@@ -22,13 +23,13 @@ public class ClassSubjectController {
     }
 
     @PostMapping
-    public ResponseEntity<ClassSubject> assignSubject(@RequestBody ClassSubject classSubject) {
+    public ResponseEntity<ClassSubject> assignSubject(@Valid @RequestBody ClassSubject classSubject) {
         return ResponseEntity.ok(classSubjectService.assignSubjectToClass(classSubject));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ClassSubject> updateAssignment(@PathVariable("id") String id,
-            @RequestBody ClassSubject classSubject) {
+            @Valid @RequestBody ClassSubject classSubject) {
         return ResponseEntity.ok(classSubjectService.updateAssignment(id, classSubject));
     }
 

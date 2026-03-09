@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/ai")
@@ -20,7 +21,7 @@ public class AiAssistantController {
     private final DocumentProcessorService documentProcessorService;
 
     @PostMapping("/chat")
-    public ResponseEntity<AiChatResponse> chat(@RequestBody AiChatRequest request) {
+    public ResponseEntity<AiChatResponse> chat(@Valid @RequestBody AiChatRequest request) {
         String response = aiAssistantService.processQuery(request);
         return ResponseEntity.ok(AiChatResponse.builder().response(response).build());
     }
@@ -38,5 +39,15 @@ public class AiAssistantController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", e.getMessage()));
         }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Void> update(@PathVariable String id, @RequestBody Object body) {
+        return ResponseEntity.ok().build();
     }
 }
