@@ -4,7 +4,6 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
-import ChatAssistant from "@/components/ChatAssistant";
 
 const getPageTitle = (pathname: string) => {
     if (pathname === "/") return "Dashboard";
@@ -50,7 +49,6 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
                     {children}
                 </main>
             </div>
-            <ChatAssistant />
         </div>
     );
 }

@@ -257,3 +257,15 @@ export const ClassSubjectService = {
     removeSubjectFromClass: (classId: string, subjectId: string) => fetchWithAuth(`/class-subjects/class/${classId}/subject/${subjectId}`, { method: "DELETE" }),
 };
 
+export const SchoolConfigService = {
+    getSettings: () => {
+        const userStr = localStorage.getItem("erp_user");
+        let tenantId = "TENANT_001";
+        if (userStr) {
+            try { tenantId = JSON.parse(userStr).tenantId; } catch (e) {}
+        }
+        return fetchWithAuth("/school-config/settings", {
+            headers: { "X-Tenant-ID": tenantId }
+        });
+    },
+};

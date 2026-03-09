@@ -124,6 +124,7 @@ services:
       DB_URL: jdbc:postgresql://postgres-uat:5432/${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     depends_on:
       postgres-uat:
         condition: service_healthy

@@ -5,6 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 import { AuthProvider } from "@/components/AuthProvider";
+import AppLayout from "@/components/AppLayout";
 
 export const metadata: Metadata = {
   title: "Super Admin | Lmno Campus",
@@ -20,7 +21,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          {children}
+          <AppLayout>
+            {children}
+          </AppLayout>
         </AuthProvider>
       </body>
     </html>
