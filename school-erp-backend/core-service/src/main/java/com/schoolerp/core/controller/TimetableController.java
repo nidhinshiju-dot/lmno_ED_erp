@@ -20,9 +20,9 @@ public class TimetableController {
         return ResponseEntity.ok(timetableService.getAll());
     }
 
-    @GetMapping("/section/{sectionId}")
-    public ResponseEntity<List<TimetableEntry>> getBySection(@PathVariable String sectionId) {
-        return ResponseEntity.ok(timetableService.getBySectionId(sectionId));
+    @GetMapping("/class/{classId}")
+    public ResponseEntity<List<TimetableEntry>> getByClass(@PathVariable String classId) {
+        return ResponseEntity.ok(timetableService.getByClassId(classId));
     }
 
     @PostMapping

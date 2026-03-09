@@ -17,8 +17,8 @@ public class ReportService {
     private final StudentRepository studentRepository;
     private final ExamResultRepository examResultRepository;
 
-    public Map<String, Object> getAttendanceReport(String sectionId, LocalDate from, LocalDate to) {
-        var students = studentRepository.findBySectionId(sectionId);
+    public Map<String, Object> getAttendanceReport(String classId, LocalDate from, LocalDate to) {
+        var students = studentRepository.findByClassId(classId);
         int totalStudents = students.size();
 
         long totalPresent = 0, totalAbsent = 0, totalLate = 0;
@@ -33,7 +33,7 @@ public class ReportService {
         double attendanceRate = totalRecords > 0 ? (double) totalPresent / totalRecords * 100 : 0;
 
         Map<String, Object> report = new LinkedHashMap<>();
-        report.put("sectionId", sectionId);
+        report.put("classId", classId);
         report.put("from", from.toString());
         report.put("to", to.toString());
         report.put("totalStudents", totalStudents);

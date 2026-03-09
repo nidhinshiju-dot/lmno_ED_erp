@@ -36,4 +36,10 @@ public class NotificationController {
         notificationService.markAsRead(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/broadcast")
+    public ResponseEntity<Void> broadcastNotification(@RequestBody com.schoolerp.core.dto.NotificationPayload payload) {
+        notificationService.broadcast(payload);
+        return ResponseEntity.ok().build();
+    }
 }

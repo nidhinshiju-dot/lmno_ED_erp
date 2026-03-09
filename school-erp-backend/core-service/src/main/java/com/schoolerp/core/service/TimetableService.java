@@ -13,8 +13,8 @@ public class TimetableService {
 
     private final TimetableRepository repository;
 
-    public List<TimetableEntry> getBySectionId(String sectionId) {
-        return repository.findBySectionIdOrderByDayAscPeriodAsc(sectionId);
+    public List<TimetableEntry> getByClassId(String classId) {
+        return repository.findByClassIdOrderByDayAscPeriodAsc(classId);
     }
 
     public List<TimetableEntry> getAll() {

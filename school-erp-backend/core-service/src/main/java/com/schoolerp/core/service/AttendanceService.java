@@ -14,8 +14,8 @@ public class AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
 
-    public List<Attendance> getBySectionAndDate(String sectionId, LocalDate date) {
-        return attendanceRepository.findBySectionIdAndDate(sectionId, date);
+    public List<Attendance> getByClassAndDate(String classId, LocalDate date) {
+        return attendanceRepository.findByClassIdAndDate(classId, date);
     }
 
     public List<Attendance> getByStudentId(String studentId) {

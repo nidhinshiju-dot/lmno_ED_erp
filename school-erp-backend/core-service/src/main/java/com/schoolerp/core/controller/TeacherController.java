@@ -1,9 +1,9 @@
 package com.schoolerp.core.controller;
 
-import com.schoolerp.core.entity.Section;
+import com.schoolerp.core.entity.SchoolClass;
 import com.schoolerp.core.entity.Staff;
 import com.schoolerp.core.entity.Student;
-import com.schoolerp.core.repository.SectionRepository;
+import com.schoolerp.core.repository.SchoolClassRepository;
 import com.schoolerp.core.repository.StaffRepository;
 import com.schoolerp.core.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ import java.util.List;
 public class TeacherController {
 
     private final StaffRepository staffRepository;
-    private final SectionRepository sectionRepository;
+    private final SchoolClassRepository schoolClassRepository;
     private final StudentRepository studentRepository;
 
     @GetMapping("/profile/{userId}")
@@ -28,9 +28,9 @@ public class TeacherController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/{staffId}/sections")
-    public ResponseEntity<List<Section>> getMySections(@PathVariable String staffId) {
-        return ResponseEntity.ok(sectionRepository.findByClassTeacherId(staffId));
+    @GetMapping("/{staffId}/classes")
+    public ResponseEntity<List<SchoolClass>> getMyClasses(@PathVariable String staffId) {
+        return ResponseEntity.ok(schoolClassRepository.findByClassTeacherId(staffId));
     }
 
     @GetMapping("/{staffId}/students")

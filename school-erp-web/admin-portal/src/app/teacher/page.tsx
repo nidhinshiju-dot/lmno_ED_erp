@@ -6,11 +6,11 @@ import { TeacherService, CourseService } from "@/lib/api";
 import { Users, BookOpen, ClipboardCheck, GraduationCap } from "lucide-react";
 import Link from "next/link";
 
-interface SectionItem { id: string; name: string; schoolClass: { name: string }; }
+interface ClassItem { id: string; name: string; }
 interface CourseItem { id: string; title: string; code: string; }
 
 export default function TeacherDashboard() {
-    const [sections, setSections] = useState<SectionItem[]>([]);
+    const [classes, setClasses] = useState<ClassItem[]>([]);
     const [courses, setCourses] = useState<CourseItem[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -20,11 +20,11 @@ export default function TeacherDashboard() {
     useEffect(() => {
         const load = async () => {
             try {
-                const [secData, courseData] = await Promise.all([
-                    TeacherService.getMySections(staffId),
+                const [classData, courseData] = await Promise.all([
+                    TeacherService.getMyClasses(staffId),
                     CourseService.getAll(),
                 ]);
-                setSections(secData);
+                setClasses(classData);
                 setCourses(courseData);
             } catch { console.error("Failed to load teacher data"); }
             finally { setLoading(false); }
@@ -34,7 +34,7 @@ export default function TeacherDashboard() {
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background">
-            <Header title="Teacher Dashboard" />
+
             <main className="flex-1 overflow-y-auto p-6">
                 <div className="max-w-5xl mx-auto space-y-6">
                     <div>
@@ -47,8 +47,8 @@ export default function TeacherDashboard() {
                         <div className="bg-card border border-border rounded-xl p-6 flex items-center gap-4">
                             <div className="w-12 h-12 rounded-xl bg-blue-50 text-primary flex items-center justify-center"><Users className="w-6 h-6" /></div>
                             <div>
-                                <p className="text-2xl font-bold">{sections.length}</p>
-                                <p className="text-sm text-muted-foreground">My Sections</p>
+                                <p className="text-2xl font-bold">{classes.length}</p>
+                                <p className="text-sm text-muted-foreground">My Classes</p>
                             </div>
                         </div>
                         <div className="bg-card border border-border rounded-xl p-6 flex items-center gap-4">
@@ -74,7 +74,7 @@ export default function TeacherDashboard() {
                                 <GraduationCap className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
                                 <div>
                                     <h3 className="font-bold">My Students</h3>
-                                    <p className="text-sm text-muted-foreground">View students in your class sections.</p>
+                                    <p className="text-sm text-muted-foreground">View students in your classes.</p>
                                 </div>
                             </div>
                         </Link>
@@ -89,28 +89,26 @@ export default function TeacherDashboard() {
                         </Link>
                     </div>
 
-                    {/* My Sections Table */}
+                    {/* My Classes Table */}
                     {loading ? (
                         <p className="text-center text-muted-foreground py-8">Loading...</p>
                     ) : (
                         <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
                             <div className="px-6 py-4 border-b border-border">
-                                <h3 className="font-semibold">My Sections (Class Teacher)</h3>
+                                <h3 className="font-semibold">My Classes (Class Teacher)</h3>
                             </div>
                             <table className="w-full text-sm text-left">
                                 <thead className="bg-muted/50 border-b border-border">
                                     <tr>
-                                        <th className="p-4 font-semibold text-muted-foreground">Section</th>
                                         <th className="p-4 font-semibold text-muted-foreground">Class</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {sections.length === 0 ? (
-                                        <tr><td colSpan={2} className="p-6 text-center text-muted-foreground">No sections assigned yet.</td></tr>
-                                    ) : sections.map(s => (
-                                        <tr key={s.id} className="border-b border-border hover:bg-muted/30 transition-colors">
-                                            <td className="p-4 font-medium">{s.name}</td>
-                                            <td className="p-4">{s.schoolClass?.name || "—"}</td>
+                                    {classes.length === 0 ? (
+                                        <tr><td colSpan={1} className="p-6 text-center text-muted-foreground">No classes assigned yet.</td></tr>
+                                    ) : classes.map(c => (
+                                        <tr key={c.id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                                            <td className="p-4 font-medium">{c.name}</td>
                                         </tr>
                                     ))}
                                 </tbody>

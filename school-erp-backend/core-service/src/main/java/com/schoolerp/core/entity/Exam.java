@@ -32,8 +32,8 @@ public class Exam {
     @Column(name = "exam_date")
     private LocalDate examDate;
 
-    @Column(name = "max_marks", nullable = false)
-    private int maxMarks;
+    @Column(name = "total_marks", nullable = false)
+    private int totalMarks;
 
     @Column(nullable = false)
     private String status; // SCHEDULED, COMPLETED, RESULTS_PUBLISHED

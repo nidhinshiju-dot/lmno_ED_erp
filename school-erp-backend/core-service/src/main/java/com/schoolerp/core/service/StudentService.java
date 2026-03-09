@@ -45,7 +45,6 @@ public class StudentService {
             s.setAddress(updated.getAddress());
             s.setParentContact(updated.getParentContact());
             s.setParentId(updated.getParentId());
-            s.setSectionId(updated.getSectionId());
             s.setClassId(updated.getClassId());
             return studentRepository.save(s);
         }).orElseThrow(() -> new RuntimeException("Student not found"));
@@ -58,19 +57,17 @@ public class StudentService {
         }).orElseThrow(() -> new RuntimeException("Student not found"));
     }
 
-    public Student transferStudent(String id, String newClassId, String newSectionId) {
+    public Student transferStudent(String id, String newClassId) {
         return studentRepository.findById(id).map(s -> {
             s.setClassId(newClassId);
-            s.setSectionId(newSectionId);
             return studentRepository.save(s);
         }).orElseThrow(() -> new RuntimeException("Student not found"));
     }
 
-    public List<Student> promoteStudents(String fromClassId, String toClassId, String toSectionId) {
+    public List<Student> promoteStudents(String fromClassId, String toClassId) {
         List<Student> students = studentRepository.findByClassId(fromClassId);
         students.forEach(s -> {
             s.setClassId(toClassId);
-            s.setSectionId(toSectionId);
         });
         return studentRepository.saveAll(students);
     }

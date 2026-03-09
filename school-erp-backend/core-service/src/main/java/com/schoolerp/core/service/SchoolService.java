@@ -38,6 +38,18 @@ public class SchoolService {
             // Set search path first so tables are created in the right schema
             jdbcTemplate.execute("SET search_path TO " + tenantId);
             populator.execute(jdbcTemplate.getDataSource());
+            
+            if (school.isIncludeDefaultSubjects()) {
+                String insertSubjects = "INSERT INTO subjects (id, name, code, status) VALUES " +
+                    "(gen_random_uuid()::text, 'Mathematics', 'MATH', 'ACTIVE'), " +
+                    "(gen_random_uuid()::text, 'Science', 'SCI', 'ACTIVE'), " +
+                    "(gen_random_uuid()::text, 'Social Studies', 'SST', 'ACTIVE'), " +
+                    "(gen_random_uuid()::text, 'English', 'ENG', 'ACTIVE'), " +
+                    "(gen_random_uuid()::text, 'Hindi', 'HIN', 'ACTIVE'), " +
+                    "(gen_random_uuid()::text, 'Computer Science', 'CS', 'ACTIVE')";
+                jdbcTemplate.execute(insertSubjects);
+            }
+            
             jdbcTemplate.execute("SET search_path TO public"); // Reset
             
             // 3. Provision the Admin User in Auth Service

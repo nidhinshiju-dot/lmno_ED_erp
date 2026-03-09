@@ -21,11 +21,11 @@ public class AttendanceController {
     private final AttendanceService attendanceService;
     private final AttendanceRepository attendanceRepository;
 
-    @GetMapping("/section/{sectionId}")
-    public ResponseEntity<List<Attendance>> getBySection(
-            @PathVariable String sectionId,
+    @GetMapping("/class/{classId}")
+    public ResponseEntity<List<Attendance>> getByClass(
+            @PathVariable String classId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(attendanceService.getBySectionAndDate(sectionId, date));
+        return ResponseEntity.ok(attendanceService.getByClassAndDate(classId, date));
     }
 
     @GetMapping("/student/{studentId}")

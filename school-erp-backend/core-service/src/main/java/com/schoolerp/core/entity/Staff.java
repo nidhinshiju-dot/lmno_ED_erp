@@ -36,12 +36,20 @@ public class Staff {
     private String email;
     private String phone;
 
+    @Column(name = "employee_id", unique = true)
+    private String employeeId;
+
     /** B1/B6 — Account activation status: ACTIVE, INACTIVE */
     private String status;
 
     @PrePersist
     void prePersist() {
         if (status == null) status = "ACTIVE";
+        if (employeeId == null || employeeId.trim().isEmpty()) {
+            String datePrefix = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+            int randomSeq = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 9999);
+            employeeId = datePrefix + randomSeq;
+        }
     }
 }
 

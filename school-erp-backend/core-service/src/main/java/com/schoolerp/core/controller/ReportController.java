@@ -23,10 +23,10 @@ public class ReportController {
 
     @GetMapping("/attendance")
     public ResponseEntity<Map<String, Object>> attendanceReport(
-            @RequestParam String sectionId,
+            @RequestParam String classId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return ResponseEntity.ok(reportService.getAttendanceReport(sectionId, from, to));
+        return ResponseEntity.ok(reportService.getAttendanceReport(classId, from, to));
     }
 
     @GetMapping("/exam/{examId}")
@@ -54,11 +54,11 @@ public class ReportController {
     /** Export attendance report as CSV */
     @GetMapping("/attendance/export/csv")
     public ResponseEntity<byte[]> exportAttendanceCsv(
-            @RequestParam String sectionId,
+            @RequestParam String classId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 
-        Map<String, Object> report = reportService.getAttendanceReport(sectionId, from, to);
+        Map<String, Object> report = reportService.getAttendanceReport(classId, from, to);
         StringBuilder csv = new StringBuilder("Student ID,Student Name,Date,Status\n");
 
         @SuppressWarnings("unchecked")
@@ -71,14 +71,14 @@ public class ReportController {
                .append(row.getOrDefault("status", "")).append("\n");
         }
 
-        return csvResponse(csv, "attendance_" + sectionId + "_" + from + "_" + to + ".csv");
+        return csvResponse(csv, "attendance_" + classId + "_" + from + "_" + to + ".csv");
     }
 
     /** Export student list as CSV */
     @GetMapping("/students/export/csv")
     public ResponseEntity<byte[]> exportStudentsCsv() {
         Map<String, Object> report = reportService.getStudentReport("all");
-        StringBuilder csv = new StringBuilder("Student ID,Name,Admission No,Class,Section,Status\n");
+        StringBuilder csv = new StringBuilder("Student ID,Name,Admission No,Class,Status\n");
 
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> students =
@@ -88,7 +88,6 @@ public class ReportController {
                .append(escapeCsv(String.valueOf(s.getOrDefault("fullName", "")))).append(",")
                .append(s.getOrDefault("admissionNumber", "")).append(",")
                .append(s.getOrDefault("className", "")).append(",")
-               .append(s.getOrDefault("sectionName", "")).append(",")
                .append(s.getOrDefault("status", "")).append("\n");
         }
 

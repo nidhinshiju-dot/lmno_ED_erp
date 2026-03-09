@@ -18,8 +18,8 @@ public class TimetableEntry {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(nullable = false)
-    private String sectionId;
+    @Column(name = "class_id", nullable = false)
+    private String classId;
 
     @Column(nullable = false)
     private String day; // MON, TUE, WED, THU, FRI, SAT

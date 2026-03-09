@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
-import { SectionService, AttendanceService, StudentService } from "@/lib/api";
+import { ClassService, AttendanceService, StudentService } from "@/lib/api";
 import { CheckCircle, XCircle, Clock } from "lucide-react";
 
-interface SectionItem { id: string; name: string; }
+interface SchoolClass { id: string; name: string; }
 interface StudentItem { id: string; name: string; admissionNumber: string; }
-interface AttendanceRecord { id?: string; studentId: string; sectionId: string; date: string; status: string; }
+interface AttendanceRecord { id?: string; studentId: string; classId: string; date: string; status: string; }
 
 export default function AttendancePage() {
-    const [sections, setSections] = useState<SectionItem[]>([]);
+    const [classes, setClasses] = useState<SchoolClass[]>([]);
     const [students, setStudents] = useState<StudentItem[]>([]);
-    const [selectedSection, setSelectedSection] = useState("");
+    const [selectedClass, setSelectedClass] = useState("");
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
     const [attendance, setAttendance] = useState<Record<string, string>>({});
     const [existingRecords, setExistingRecords] = useState<AttendanceRecord[]>([]);
@@ -22,8 +22,8 @@ export default function AttendancePage() {
     useEffect(() => {
         const load = async () => {
             try {
-                const [secData, stuData] = await Promise.all([SectionService.getAll(), StudentService.getAll()]);
-                setSections(secData);
+                const [classData, stuData] = await Promise.all([ClassService.getAll(), StudentService.getAll()]);
+                setClasses(classData);
                 setStudents(stuData);
             } catch { console.error("Failed"); }
             finally { setLoading(false); }
@@ -32,10 +32,10 @@ export default function AttendancePage() {
     }, []);
 
     useEffect(() => {
-        if (!selectedSection || !selectedDate) return;
+        if (!selectedClass || !selectedDate) return;
         const loadAttendance = async () => {
             try {
-                const data = await AttendanceService.getBySection(selectedSection, selectedDate);
+                const data = await AttendanceService.getByClass(selectedClass, selectedDate);
                 setExistingRecords(data);
                 const map: Record<string, string> = {};
                 data.forEach((r: AttendanceRecord) => { map[r.studentId] = r.status; });
@@ -43,7 +43,9 @@ export default function AttendancePage() {
             } catch { setExistingRecords([]); setAttendance({}); }
         };
         loadAttendance();
-    }, [selectedSection, selectedDate]);
+    }, [selectedClass, selectedDate]);
+
+    const activeRoster = selectedClass ? students.filter((s: any) => s.schoolClass?.id === selectedClass) : [];
 
     const toggleStatus = (studentId: string) => {
         const current = attendance[studentId] || "PRESENT";
@@ -54,9 +56,9 @@ export default function AttendancePage() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const records = students.map(s => ({
+            const records = activeRoster.map(s => ({
                 studentId: s.id,
-                sectionId: selectedSection,
+                classId: selectedClass,
                 date: selectedDate,
                 status: attendance[s.id] || "PRESENT",
             }));
@@ -80,27 +82,27 @@ export default function AttendancePage() {
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background">
-            <Header title="Attendance" />
+
             <main className="flex-1 overflow-y-auto p-6">
                 <div className="max-w-4xl mx-auto space-y-6">
                     <div>
                         <h2 className="text-3xl font-bold tracking-tight">Attendance Management</h2>
-                        <p className="text-muted-foreground mt-1">Mark daily attendance for class sections.</p>
+                        <p className="text-muted-foreground mt-1">Mark daily attendance for classes.</p>
                     </div>
 
                     <div className="flex items-center gap-4 flex-wrap">
                         <div>
-                            <label className="text-sm font-medium mb-1 block">Section</label>
-                            <select value={selectedSection} onChange={e => setSelectedSection(e.target.value)} className="p-2 border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-primary">
-                                <option value="">Select section...</option>
-                                {sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            <label className="text-sm font-medium mb-1 block">Class</label>
+                            <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)} className="p-2 border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-primary">
+                                <option value="">Select class...</option>
+                                {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className="text-sm font-medium mb-1 block">Date</label>
                             <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="p-2 border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-primary" />
                         </div>
-                        {selectedSection && (
+                        {selectedClass && (
                             <button onClick={handleSave} disabled={saving} className="mt-6 bg-primary hover:bg-blue-600 disabled:opacity-50 text-primary-foreground px-6 py-2 rounded-lg font-medium text-sm transition-colors">
                                 {saving ? "Saving..." : "Save Attendance"}
                             </button>
@@ -109,13 +111,17 @@ export default function AttendancePage() {
 
                     {loading ? (
                         <p className="text-center text-muted-foreground py-8">Loading...</p>
-                    ) : !selectedSection ? (
+                    ) : !selectedClass ? (
                         <div className="bg-card border border-border rounded-xl p-12 text-center text-muted-foreground">
-                            Select a section and date to mark attendance.
+                            Select a class and date to mark attendance.
+                        </div>
+                    ) : activeRoster.length === 0 ? (
+                        <div className="bg-card border border-border rounded-xl p-12 text-center text-muted-foreground">
+                            No students are registered to this class yet.
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {students.map(student => {
+                            {activeRoster.map(student => {
                                 const status = attendance[student.id] || "PRESENT";
                                 return (
                                     <button key={student.id} onClick={() => toggleStatus(student.id)} className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer ${getStatusColor(status)}`}>

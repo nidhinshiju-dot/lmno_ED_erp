@@ -29,3 +29,15 @@ export const SchoolService = {
 export const AuthProvisionService = {
     provision: (data: Record<string, unknown>) => fetchApi("/auth/provision", { method: "POST", body: JSON.stringify(data) }),
 };
+
+export const AuthService = {
+    login: async (credentials: Record<string, string>) => {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(credentials),
+        });
+        if (!response.ok) throw new Error("Invalid credentials");
+        return response.json();
+    }
+};

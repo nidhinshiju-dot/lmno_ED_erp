@@ -70,7 +70,7 @@ export default function InvoicesPage() {
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background">
-            <Header title="Invoices & Payments" />
+
 
             <main className="flex-1 overflow-y-auto p-6">
                 <div className="max-w-6xl mx-auto space-y-6">

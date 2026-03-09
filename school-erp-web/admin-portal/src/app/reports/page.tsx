@@ -10,14 +10,14 @@ export default function ReportsPage() {
     const [selectedReport, setSelectedReport] = useState<ReportType>("");
 
     const reports = [
-        { type: "attendance" as ReportType, icon: BarChart3, title: "Attendance Report", desc: "Daily, weekly, monthly attendance summaries by class/section.", color: "bg-blue-50 text-blue-600 border-blue-200" },
+        { type: "attendance" as ReportType, icon: BarChart3, title: "Attendance Report", desc: "Daily, weekly, monthly attendance summaries by class.", color: "bg-blue-50 text-blue-600 border-blue-200" },
         { type: "exam" as ReportType, icon: FileText, title: "Exam Results Report", desc: "Student-wise marks, grades, rankings, and class performance.", color: "bg-purple-50 text-purple-600 border-purple-200" },
         { type: "student" as ReportType, icon: BarChart3, title: "Student Report", desc: "Individual student performance, attendance, and fee summary.", color: "bg-emerald-50 text-emerald-600 border-emerald-200" },
     ];
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background">
-            <Header title="Reports" />
+
             <main className="flex-1 overflow-y-auto p-6">
                 <div className="max-w-4xl mx-auto space-y-6">
                     <div>

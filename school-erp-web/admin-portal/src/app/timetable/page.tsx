@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
-import { SectionService, TimetableService, StaffService } from "@/lib/api";
+import { ClassService, TimetableService, StaffService } from "@/lib/api";
 import { Plus, Calendar } from "lucide-react";
 
-interface TimetableEntry { id: string; sectionId: string; day: string; period: number; subject: string; teacherId: string; }
-interface SectionItem { id: string; name: string; }
+interface TimetableEntry { id: string; classId: string; day: string; period: number; subject: string; teacherId: string; }
+interface SchoolClass { id: string; name: string; }
 interface StaffMember { id: string; name: string; }
 
 const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT"];
@@ -14,9 +14,9 @@ const PERIODS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export default function TimetablePage() {
     const [entries, setEntries] = useState<TimetableEntry[]>([]);
-    const [sections, setSections] = useState<SectionItem[]>([]);
+    const [classes, setClasses] = useState<SchoolClass[]>([]);
     const [staffList, setStaffList] = useState<StaffMember[]>([]);
-    const [selectedSection, setSelectedSection] = useState("");
+    const [selectedClass, setSelectedClass] = useState("");
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newEntry, setNewEntry] = useState({ day: "MON", period: 1, subject: "", teacherId: "" });
@@ -24,8 +24,8 @@ export default function TimetablePage() {
     useEffect(() => {
         const load = async () => {
             try {
-                const [secData, staffData] = await Promise.all([SectionService.getAll(), StaffService.getAll()]);
-                setSections(secData);
+                const [classData, staffData] = await Promise.all([ClassService.getAll(), StaffService.getAll()]);
+                setClasses(classData);
                 setStaffList(staffData);
             } catch { console.error("Failed to load data"); }
             finally { setLoading(false); }
@@ -34,23 +34,23 @@ export default function TimetablePage() {
     }, []);
 
     useEffect(() => {
-        if (!selectedSection) return;
+        if (!selectedClass) return;
         const loadEntries = async () => {
             try {
-                const data = await TimetableService.getBySection(selectedSection);
+                const data = await TimetableService.getByClass(selectedClass);
                 setEntries(data);
             } catch { console.error("Failed to load timetable"); }
         };
         loadEntries();
-    }, [selectedSection]);
+    }, [selectedClass]);
 
     const getCell = (day: string, period: number) => entries.find(e => e.day === day && e.period === period);
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedSection) { alert("Select a section first"); return; }
+        if (!selectedClass) { alert("Select a class first"); return; }
         try {
-            const created = await TimetableService.create({ ...newEntry, sectionId: selectedSection });
+            const created = await TimetableService.create({ ...newEntry, classId: selectedClass });
             setEntries([...entries, created]);
             setIsModalOpen(false);
             setNewEntry({ day: "MON", period: 1, subject: "", teacherId: "" });
@@ -61,7 +61,7 @@ export default function TimetablePage() {
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background">
-            <Header title="Timetable Management" />
+
             <main className="flex-1 overflow-y-auto p-6">
                 <div className="max-w-6xl mx-auto space-y-6">
                     <div className="flex items-center justify-between">
@@ -75,19 +75,19 @@ export default function TimetablePage() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <label className="text-sm font-medium">Section:</label>
-                        <select value={selectedSection} onChange={e => setSelectedSection(e.target.value)} className="p-2 border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-primary">
-                            <option value="">Select a section...</option>
-                            {sections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        <label className="text-sm font-medium">Class:</label>
+                        <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)} className="p-2 border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">Select a class...</option>
+                            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>
 
                     {loading ? (
                         <p className="text-muted-foreground text-center py-12">Loading...</p>
-                    ) : !selectedSection ? (
+                    ) : !selectedClass ? (
                         <div className="bg-card border border-border rounded-xl p-12 text-center text-muted-foreground">
                             <Calendar className="w-12 h-12 mx-auto mb-4 opacity-40" />
-                            Select a section to view its timetable.
+                            Select a class to view its timetable.
                         </div>
                     ) : (
                         <div className="bg-card border border-border rounded-xl shadow-sm overflow-auto">
@@ -149,7 +149,7 @@ export default function TimetablePage() {
                             <div><label className="text-sm font-medium mb-1 block">Teacher</label>
                                 <select value={newEntry.teacherId} onChange={e => setNewEntry({...newEntry, teacherId: e.target.value})} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                                     <option value="">Select teacher...</option>
-                                    {staffList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                    {staffList.filter((s: any) => s.department === "Teaching").map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </select>
                             </div>
                             <div className="flex justify-end gap-3 pt-4 border-t border-border">

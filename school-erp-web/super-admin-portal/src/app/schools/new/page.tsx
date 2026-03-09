@@ -18,6 +18,7 @@ export default function OnboardSchoolPage() {
     phone: "",
     address: "",
     website: "",
+    includeDefaultSubjects: true,
   });
 
   const generateTenantId = (name: string) => {
@@ -144,6 +145,22 @@ export default function OnboardSchoolPage() {
                         placeholder="sunriseschool"
                     />
                 </div>
+             </div>
+          </div>
+
+          <div className="space-y-4 pt-4">
+             <div className="flex items-center gap-3 bg-blue-50/50 p-4 border border-blue-100 rounded-xl">
+                 <input 
+                    type="checkbox" 
+                    id="includeDefaultSubjects" 
+                    name="includeDefaultSubjects"
+                    checked={formData.includeDefaultSubjects}
+                    onChange={(e) => setFormData({...formData, includeDefaultSubjects: e.target.checked})}
+                    className="w-5 h-5 rounded border-blue-300 text-primary focus:ring-primary"
+                 />
+                 <label htmlFor="includeDefaultSubjects" className="text-sm font-medium cursor-pointer">
+                    Initialize with default Indian Curriculum subjects (Math, Science, English, etc.)
+                 </label>
              </div>
           </div>
 

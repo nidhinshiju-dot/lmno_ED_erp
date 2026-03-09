@@ -26,12 +26,8 @@ public class Subject {
 
     private String description;
 
-    @Column(name = "class_id")
-    private String classId;
-
-    /** B4 — Per-subject teacher assignment */
-    @Column(name = "teacher_id")
-    private String teacherId;
+    @Column(name = "subject_type")
+    private String subjectType; // CORE, ELECTIVE, OPTIONAL
 
     @Column(nullable = false)
     private String status; // ACTIVE, INACTIVE
@@ -43,8 +39,35 @@ public class Subject {
     @Column(name = "syllabus_name")
     private String syllabusName;
 
+    @Column(name = "created_at", updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private java.time.LocalDateTime updatedAt;
+
     @PrePersist
     void prePersist() {
-        if (status == null) status = "ACTIVE";
+        if (status == null)
+            status = "ACTIVE";
+        if (code == null || code.trim().isEmpty()) {
+            String prefix = "SUBJ";
+            if (name != null) {
+                String cleanName = name.replaceAll("[^a-zA-Z0-9]", "");
+                if (cleanName.length() >= 4) {
+                    prefix = cleanName.substring(0, 4).toUpperCase();
+                } else if (!cleanName.isEmpty()) {
+                    prefix = String.format("%-4s", cleanName.toUpperCase()).replace(' ', 'X');
+                }
+            }
+            int randomSeq = java.util.concurrent.ThreadLocalRandom.current().nextInt(100, 1000);
+            code = prefix + randomSeq;
+        }
+        createdAt = java.time.LocalDateTime.now();
+        updatedAt = java.time.LocalDateTime.now();
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        updatedAt = java.time.LocalDateTime.now();
     }
 }

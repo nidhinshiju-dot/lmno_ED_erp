@@ -21,20 +21,10 @@ public class SubjectController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Subject> getById(@PathVariable String id) {
+    public ResponseEntity<Subject> getById(@PathVariable("id") String id) {
         return subjectService.getById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/class/{classId}")
-    public ResponseEntity<List<Subject>> getByClass(@PathVariable String classId) {
-        return ResponseEntity.ok(subjectService.getByClassId(classId));
-    }
-
-    @GetMapping("/teacher/{teacherId}")
-    public ResponseEntity<List<Subject>> getByTeacher(@PathVariable String teacherId) {
-        return ResponseEntity.ok(subjectService.getByTeacherId(teacherId));
     }
 
     @PostMapping
@@ -43,7 +33,13 @@ public class SubjectController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Subject> update(@PathVariable String id, @RequestBody Subject subject) {
+    public ResponseEntity<Subject> update(@PathVariable("id") String id, @RequestBody Subject subject) {
         return ResponseEntity.ok(subjectService.update(id, subject));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable("id") String id) {
+        subjectService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

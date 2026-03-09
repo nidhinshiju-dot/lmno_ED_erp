@@ -23,8 +23,8 @@ public class Attendance {
     @Column(name = "student_id", nullable = false)
     private String studentId;
 
-    @Column(name = "section_id", nullable = false)
-    private String sectionId;
+    @Column(name = "class_id", nullable = false)
+    private String classId;
 
     @Column(nullable = false)
     private LocalDate date;

@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Bell, Search, Check, X, ChevronDown, LogOut } from "lucide-react";
+import { Bell, Search, Check, X, ChevronDown, LogOut, Menu } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 
 interface NotifItem { id: string; title: string; message: string; type: string; read: boolean; createdAt: string; }
 
-export default function Header({ title = "Dashboard" }: { title?: string }) {
+export default function Header({ title = "Dashboard", toggleSidebar }: { title?: string; toggleSidebar?: () => void }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const { user, logout } = useAuth();
@@ -41,11 +41,14 @@ export default function Header({ title = "Dashboard" }: { title?: string }) {
     };
 
     return (
-        <header className="h-16 bg-white border-b border-[#E2E8F0] sticky top-0 z-40 flex items-center justify-between px-6">
+        <header className="h-16 bg-white border-b border-[#E2E8F0] sticky top-0 z-40 flex items-center justify-between px-6 transition-all duration-300">
             {/* Left: Page title + Search */}
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
+                {toggleSidebar && (
+                    <Menu className="w-5 h-5 cursor-pointer text-[#475569] hover:text-[#0F172A] hidden sm:block" onClick={toggleSidebar} />
+                )}
                 <h1 className="text-lg font-semibold text-[#0F172A]">{title}</h1>
-                <div className="relative hidden md:block">
+                <div className="relative hidden md:block ml-2">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94A3B8]" />
                     <input
                         type="text"

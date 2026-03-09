@@ -59,11 +59,11 @@ public class StudentController {
 
     @PostMapping("/{id}/transfer")
     public ResponseEntity<Student> transfer(@PathVariable String id, @RequestBody java.util.Map<String, String> body) {
-        return ResponseEntity.ok(studentService.transferStudent(id, body.get("classId"), body.get("sectionId")));
+        return ResponseEntity.ok(studentService.transferStudent(id, body.get("classId")));
     }
 
     @PostMapping("/promote")
     public ResponseEntity<List<Student>> promote(@RequestBody java.util.Map<String, String> body) {
-        return ResponseEntity.ok(studentService.promoteStudents(body.get("fromClassId"), body.get("toClassId"), body.get("toSectionId")));
+        return ResponseEntity.ok(studentService.promoteStudents(body.get("fromClassId"), body.get("toClassId")));
     }
 }

@@ -57,7 +57,7 @@ export default function StaffDirectoryPage() {
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background">
-            <Header title="Staff Directory" />
+
 
             <main className="flex-1 overflow-y-auto p-6">
                 <div className="max-w-6xl mx-auto space-y-6">
@@ -152,10 +152,7 @@ export default function StaffDirectoryPage() {
                                 <label className="text-sm font-medium">Department</label>
                                 <select className="w-full p-2 border border-border rounded-lg bg-background" value={formData.department} onChange={e => setFormData({...formData, department: e.target.value})}>
                                     <option value="Administration">Administration</option>
-                                    <option value="Mathematics">Mathematics</option>
-                                    <option value="Science">Science</option>
-                                    <option value="Arts">Arts</option>
-                                    <option value="Physical Education">Physical Education</option>
+                                    <option value="Teaching">Teaching</option>
                                 </select>
                             </div>
                             <div className="space-y-2">

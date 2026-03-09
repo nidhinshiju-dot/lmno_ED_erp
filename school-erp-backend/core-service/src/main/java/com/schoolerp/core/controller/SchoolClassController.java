@@ -31,4 +31,15 @@ public class SchoolClassController {
     public SchoolClass createClass(@RequestBody SchoolClass schoolClass) {
         return schoolClassService.createClass(schoolClass);
     }
+
+    @PatchMapping("/{id}/assign-teacher")
+    public SchoolClass assignTeacher(@PathVariable("id") String id, @RequestParam("staffId") String staffId) {
+        return schoolClassService.assignTeacher(id, staffId);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteClass(@PathVariable("id") String id) {
+        schoolClassService.deleteClass(id);
+        return ResponseEntity.noContent().build();
+    }
 }

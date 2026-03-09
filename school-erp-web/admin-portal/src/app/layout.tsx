@@ -8,7 +8,7 @@ import ClientLayoutWrapper from "@/components/ClientLayoutWrapper";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "School ERP - Admin Portal",
+  title: "Lmno Campus - Admin Portal",
   description: "Manage your school effectively.",
 };
 

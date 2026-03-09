@@ -12,6 +12,7 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final PushNotificationService pushNotificationService;
 
     public List<Notification> getUserNotifications(String userId) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
@@ -34,5 +35,29 @@ public class NotificationService {
 
     public Notification create(Notification notification) {
         return notificationRepository.save(notification);
+    }
+
+    public void broadcast(com.schoolerp.core.dto.NotificationPayload payload) {
+        // Save a record of the broadcast for audit logs
+        Notification notif = new Notification();
+        notif.setUserId("BROADCAST");
+        notif.setTitle(payload.getTitle());
+        notif.setMessage(payload.getMessage());
+        notif.setType("ANNOUNCEMENT");
+        notif.setReferenceId(payload.getTargetId());
+        Notification saved = notificationRepository.save(notif);
+
+        // Map payload scope to FCM Topic logic
+        String topic = payload.getScope();
+        if ("CLASS".equals(topic) && payload.getTargetId() != null) {
+            topic = "CLASS_" + payload.getTargetId();
+        }
+
+        // Send via PushNotificationService including the mobile intent
+        pushNotificationService.sendTopicNotification(
+            topic, 
+            payload.getTitle(), 
+            payload.getMessage() + " [intent: VIEW_MESSAGE, id: " + saved.getId() + "]"
+        );
     }
 }

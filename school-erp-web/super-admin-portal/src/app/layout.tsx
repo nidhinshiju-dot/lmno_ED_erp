@@ -4,8 +4,10 @@ import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
+import { AuthProvider } from "@/components/AuthProvider";
+
 export const metadata: Metadata = {
-  title: "Super Admin | School Platform",
+  title: "Super Admin | Lmno Campus",
   description: "Platform management for school administrators",
 };
 
@@ -16,7 +18,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   );
 }

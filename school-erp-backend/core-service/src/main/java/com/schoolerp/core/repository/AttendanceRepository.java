@@ -9,7 +9,7 @@ import java.util.List;
 
 @Repository
 public interface AttendanceRepository extends JpaRepository<Attendance, String> {
-    List<Attendance> findBySectionIdAndDate(String sectionId, LocalDate date);
+    List<Attendance> findByClassIdAndDate(String classId, LocalDate date);
     List<Attendance> findByStudentId(String studentId);
     List<Attendance> findByStudentIdAndDateBetween(String studentId, LocalDate start, LocalDate end);
 }

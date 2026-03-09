@@ -2,7 +2,9 @@ package com.schoolerp.core.controller;
 
 import com.schoolerp.core.entity.Exam;
 import com.schoolerp.core.entity.ExamResult;
+import com.schoolerp.core.entity.ExamSchedule;
 import com.schoolerp.core.repository.ExamResultRepository;
+import com.schoolerp.core.repository.ExamScheduleRepository;
 import com.schoolerp.core.service.ExamService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +21,12 @@ public class ExamController {
 
     private final ExamService examService;
     private final ExamResultRepository examResultRepository;
+    private final ExamScheduleRepository examScheduleRepository;
+
+    @GetMapping("/{examId}/schedules")
+    public ResponseEntity<List<ExamSchedule>> getSchedules(@PathVariable String examId) {
+        return ResponseEntity.ok(examScheduleRepository.findByExamId(examId));
+    }
 
     @GetMapping
     public ResponseEntity<List<Exam>> getAll() {

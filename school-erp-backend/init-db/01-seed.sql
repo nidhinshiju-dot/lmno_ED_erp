@@ -79,19 +79,23 @@ INSERT INTO campuses (id, name, address, tenant_id) VALUES
 -- ════════════════════════════════════════════════════════════════════════════
 -- 5. CLASSES
 -- ════════════════════════════════════════════════════════════════════════════
-CREATE TABLE IF NOT EXISTS school_classes (
+CREATE TABLE IF NOT EXISTS classes (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
     name VARCHAR NOT NULL,
+    academic_year VARCHAR NOT NULL,
     grade_level INTEGER,
+    branch VARCHAR,
     tenant_id VARCHAR
 );
 
-INSERT INTO school_classes (id, name, grade_level, tenant_id) VALUES
-('cls-08', 'Class 8',  8,  'sunrise'),
-('cls-09', 'Class 9',  9,  'sunrise'),
-('cls-10', 'Class 10', 10, 'sunrise'),
-('cls-11', 'Class 11', 11, 'sunrise'),
-('cls-12', 'Class 12', 12, 'sunrise');
+INSERT INTO classes (id, name, academic_year, grade_level, branch, tenant_id) VALUES
+('cls-08', 'Class 8', 'ay-2025', 8, NULL, 'sunrise'),
+('cls-09', 'Class 9', 'ay-2025', 9, NULL, 'sunrise'),
+('cls-10', 'Class 10', 'ay-2025', 10, NULL, 'sunrise'),
+('cls-11', 'Plus One Science', 'ay-2025', 11, 'Science', 'sunrise'),
+('cls-11c', 'Plus One Commerce', 'ay-2025', 11, 'Commerce', 'sunrise'),
+('cls-12', 'Plus Two Science', 'ay-2025', 12, 'Science', 'sunrise'),
+('cls-12c', 'Plus Two Commerce', 'ay-2025', 12, 'Commerce', 'sunrise');
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 6. SECTIONS
@@ -116,6 +120,7 @@ INSERT INTO sections (id, name, class_id, teacher_id, max_students) VALUES
 CREATE TABLE IF NOT EXISTS staff (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id VARCHAR NOT NULL,
+    employee_id VARCHAR UNIQUE,
     name VARCHAR NOT NULL,
     department VARCHAR NOT NULL,
     designation VARCHAR NOT NULL,
@@ -125,17 +130,17 @@ CREATE TABLE IF NOT EXISTS staff (
     status VARCHAR DEFAULT 'ACTIVE'
 );
 
-INSERT INTO staff (id, user_id, name, department, designation, role, email, phone, status) VALUES
+INSERT INTO staff (id, user_id, employee_id, name, department, designation, role, email, phone, status) VALUES
 -- School Admin
-('stf-000', 'usr-admin',  'Priya Sharma',       'Administration', 'School Principal',   'ADMIN',      'admin@sunriseschool.in',   '+91-9876543200', 'ACTIVE'),
+('stf-000', 'usr-admin',  '202401010001', 'Priya Sharma',       'Administration', 'School Principal',   'ADMIN',      'admin@sunriseschool.in',   '+91-9876543200', 'ACTIVE'),
 -- Teachers
-('stf-001', 'usr-t001',   'Rajesh Kumar',       'Science',        'Senior Teacher',     'TEACHER',    'rajesh@sunriseschool.in',  '+91-9876543201', 'ACTIVE'),
-('stf-002', 'usr-t002',   'Anitha Nair',        'Mathematics',    'Teacher',            'TEACHER',    'anitha@sunriseschool.in',  '+91-9876543202', 'ACTIVE'),
-('stf-003', 'usr-t003',   'Mohammed Farhan',    'English',        'Teacher',            'TEACHER',    'farhan@sunriseschool.in',  '+91-9876543203', 'ACTIVE'),
-('stf-004', 'usr-t004',   'Deepa Venkatesh',    'Social Science', 'Teacher',            'TEACHER',    'deepa@sunriseschool.in',   '+91-9876543204', 'ACTIVE'),
-('stf-005', 'usr-t005',   'Suresh Pillai',      'Computer Sci',   'Teacher',            'TEACHER',    'suresh@sunriseschool.in',  '+91-9876543205', 'ACTIVE'),
+('stf-001', 'usr-t001',   '202401010002', 'Rajesh Kumar',       'Science',        'Senior Teacher',     'TEACHER',    'rajesh@sunriseschool.in',  '+91-9876543201', 'ACTIVE'),
+('stf-002', 'usr-t002',   '202401010003', 'Anitha Nair',        'Mathematics',    'Teacher',            'TEACHER',    'anitha@sunriseschool.in',  '+91-9876543202', 'ACTIVE'),
+('stf-003', 'usr-t003',   '202401010004', 'Mohammed Farhan',    'English',        'Teacher',            'TEACHER',    'farhan@sunriseschool.in',  '+91-9876543203', 'ACTIVE'),
+('stf-004', 'usr-t004',   '202401010005', 'Deepa Venkatesh',    'Social Science', 'Teacher',            'TEACHER',    'deepa@sunriseschool.in',   '+91-9876543204', 'ACTIVE'),
+('stf-005', 'usr-t005',   '202401010006', 'Suresh Pillai',      'Computer Sci',   'Teacher',            'TEACHER',    'suresh@sunriseschool.in',  '+91-9876543205', 'ACTIVE'),
 -- Accountant
-('stf-006', 'usr-acc',    'Kavitha Reddy',      'Finance',        'Accountant',         'ACCOUNTANT', 'accounts@sunriseschool.in','+91-9876543206', 'ACTIVE');
+('stf-006', 'usr-acc',    '202401010007', 'Kavitha Reddy',      'Finance',        'Accountant',         'ACCOUNTANT', 'accounts@sunriseschool.in','+91-9876543206', 'ACTIVE');
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 8. SUBJECTS
@@ -219,6 +224,43 @@ INSERT INTO exams (id, name, class_id, exam_date, total_marks, status) VALUES
 ('exam-002', 'Mid-Term Examination',    'cls-10', '2025-09-20', 100, 'PUBLISHED'),
 ('exam-003', 'Unit Test 2 — Term 2',    'cls-10', '2025-11-05', 50,  'SCHEDULED'),
 ('exam-004', 'Annual Examination',      'cls-10', '2026-01-15', 100, 'SCHEDULED');
+
+CREATE TABLE IF NOT EXISTS exam_templates (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    name VARCHAR NOT NULL,
+    description TEXT,
+    tenant_id VARCHAR
+);
+
+INSERT INTO exam_templates (id, name, description, tenant_id) VALUES
+('etpl-01', 'Standard Mid-Term (10th)', 'Standard subject ordering for class 10 mid-terms', 'sunrise');
+
+CREATE TABLE IF NOT EXISTS exam_template_subjects (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    template_id VARCHAR NOT NULL,
+    subject_code VARCHAR NOT NULL,
+    day_offset INTEGER DEFAULT 0,
+    total_marks INTEGER DEFAULT 100
+);
+
+INSERT INTO exam_template_subjects (id, template_id, subject_code, day_offset, total_marks) VALUES
+('ets-01', 'etpl-01', 'MATH-10', 0, 100),
+('ets-02', 'etpl-01', 'SCI-10',  2, 100),
+('ets-03', 'etpl-01', 'ENG-10',  4, 100);
+
+CREATE TABLE IF NOT EXISTS exam_schedules (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    exam_id VARCHAR NOT NULL,
+    subject_id VARCHAR NOT NULL,
+    exam_date DATE,
+    start_time TIME,
+    end_time TIME
+);
+
+INSERT INTO exam_schedules (id, exam_id, subject_id, exam_date, start_time, end_time) VALUES
+('esch-01', 'exam-002', 'sub-001', '2025-09-20', '09:00:00', '12:00:00'),
+('esch-02', 'exam-002', 'sub-002', '2025-09-22', '09:00:00', '12:00:00'),
+('esch-03', 'exam-002', 'sub-003', '2025-09-24', '09:00:00', '12:00:00');
 
 -- ════════════════════════════════════════════════════════════════════════════
 -- 11. EXAM RESULTS (for published exams)
@@ -363,9 +405,13 @@ CREATE TABLE IF NOT EXISTS users (
 -- Teacher passwords:    Teacher@2026
 -- Student passwords:    Student@2026
 INSERT INTO users (id, email, password, role, tenant_id, first_name, last_name) VALUES
--- Platform Super Admin (no tenant)
-('usr-super', 'superadmin@schoolerp.app',
- '$2a$12$RKNdGSHQrxh.pZjJY1SHiu7RAWxp2MbCMQxY9mvg5NWgxJJk.o63e', 'SUPER_ADMIN', NULL, 'Super', 'Admin'),
+-- Platform Super Admins (no tenant)
+('usr-super-1', 'superadmin1@schoolerp.app',
+ '$2a$12$RKNdGSHQrxh.pZjJY1SHiu7RAWxp2MbCMQxY9mvg5NWgxJJk.o63e', 'SUPER_ADMIN', NULL, 'Super', 'Admin 1'),
+('usr-super-2', 'superadmin2@schoolerp.app',
+ '$2a$12$RKNdGSHQrxh.pZjJY1SHiu7RAWxp2MbCMQxY9mvg5NWgxJJk.o63e', 'SUPER_ADMIN', NULL, 'Super', 'Admin 2'),
+('usr-super-3', 'superadmin3@schoolerp.app',
+ '$2a$12$RKNdGSHQrxh.pZjJY1SHiu7RAWxp2MbCMQxY9mvg5NWgxJJk.o63e', 'SUPER_ADMIN', NULL, 'Super', 'Admin 3'),
 -- School Admin
 ('usr-admin', 'admin@sunriseschool.in',
  '$2a$12$OFV7M0W0RbkR6o2p1MiMOOLYstfS7.AXG1B1nTHhN4Gq4N.pJCJWa', 'ADMIN', 'sunrise', 'Priya', 'Sharma'),

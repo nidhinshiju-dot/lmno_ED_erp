@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CourseService } from "@/lib/api";
+import { CourseService, StaffService } from "@/lib/api";
 import { Plus, Search, BookOpen, Loader2, PlayCircle, Clock } from "lucide-react";
 
 interface Course {
@@ -13,6 +13,7 @@ interface Course {
 
 export default function CoursesPage() {
     const [courses, setCourses] = useState<Course[]>([]);
+    const [staff, setStaff] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,10 +25,14 @@ export default function CoursesPage() {
     });
 
     useEffect(() => {
-        const fetchCourses = async () => {
+        const fetchInitialData = async () => {
             try {
-                const data = await CourseService.getAll();
-                setCourses(data);
+                const [courseData, staffData] = await Promise.all([
+                    CourseService.getAll(),
+                    StaffService.getAll()
+                ]);
+                setCourses(courseData);
+                setStaff(staffData);
             } catch (err) {
                 console.error(err);
                 setError("Failed to fetch courses. Ensure the API Gateway and LMS Service are both running.");
@@ -35,7 +40,7 @@ export default function CoursesPage() {
                 setIsLoading(false);
             }
         };
-        fetchCourses();
+        fetchInitialData();
     }, []);
 
     const handleCreateCourse = async (e: React.FormEvent) => {
@@ -141,8 +146,13 @@ export default function CoursesPage() {
                                 <textarea rows={3} value={newCourse.description} onChange={e => setNewCourse({ ...newCourse, description: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder="Provide an academic overview..." />
                             </div>
                             <div>
-                                <label className="text-sm font-medium mb-1 block">Assigned Teacher ID</label>
-                                <input type="text" value={newCourse.teacherId} onChange={e => setNewCourse({ ...newCourse, teacherId: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="STAFF-001 (Optional)" />
+                                <label className="text-sm font-medium mb-1 block">Assigned Teacher</label>
+                                <select value={newCourse.teacherId} onChange={e => setNewCourse({ ...newCourse, teacherId: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <option value="">Select a Course Instructor...</option>
+                                    {staff.filter((s: any) => s.department === "Teaching").map(s => (
+                                        <option key={s.id} value={s.id}>{s.name} ({s.designation})</option>
+                                    ))}
+                                </select>
                             </div>
 
                             <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-border">

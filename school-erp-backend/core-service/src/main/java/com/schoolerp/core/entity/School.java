@@ -27,6 +27,9 @@ public class School {
 
     private boolean active = true;
 
+    @jakarta.persistence.Transient
+    private boolean includeDefaultSubjects;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
 }

@@ -38,9 +38,6 @@ public class Student {
     @Column(name = "parent_id")
     private String parentId;
 
-    @Column(name = "section_id")
-    private String sectionId;
-
     @Column(name = "class_id")
     private String classId;
 
@@ -50,5 +47,10 @@ public class Student {
     @PrePersist
     void prePersist() {
         if (status == null) status = "ACTIVE";
+        if (admissionNumber == null || admissionNumber.trim().isEmpty()) {
+            String datePrefix = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+            int randomSeq = java.util.concurrent.ThreadLocalRandom.current().nextInt(1000, 9999);
+            admissionNumber = datePrefix + randomSeq;
+        }
     }
 }

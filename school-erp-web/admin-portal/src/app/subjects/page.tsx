@@ -3,28 +3,22 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { SubjectService, ClassService, StaffService } from "@/lib/api";
-import { Plus, BookOpen, Search } from "lucide-react";
+import { Plus, BookOpen, Search, Trash2, RefreshCw } from "lucide-react";
 
-interface SubjectItem { id: string; name: string; code: string; description: string; classId: string; teacherId: string; status: string; }
-interface ClassItem { id: string; name: string; }
-interface StaffMember { id: string; name: string; }
+interface SubjectItem { id: string; name: string; code: string; description: string; subjectType: string; status: string; }
 
 export default function SubjectsPage() {
     const [subjects, setSubjects] = useState<SubjectItem[]>([]);
-    const [classes, setClasses] = useState<ClassItem[]>([]);
-    const [staff, setStaff] = useState<StaffMember[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [newSubject, setNewSubject] = useState({ name: "", code: "", description: "", classId: "", teacherId: "", status: "ACTIVE" });
+    const [newSubject, setNewSubject] = useState({ name: "", code: "", description: "", subjectType: "CORE", status: "ACTIVE" });
 
     useEffect(() => {
         const load = async () => {
             try {
-                const [subData, clsData, staffData] = await Promise.all([SubjectService.getAll(), ClassService.getAll(), StaffService.getAll()]);
+                const subData = await SubjectService.getAll();
                 setSubjects(subData);
-                setClasses(clsData);
-                setStaff(staffData);
             } catch { console.error("Failed to load"); }
             finally { setLoading(false); }
         };
@@ -36,8 +30,7 @@ export default function SubjectsPage() {
         s.code.toLowerCase().includes(search.toLowerCase())
     );
 
-    const getClassName = (id: string) => classes.find(c => c.id === id)?.name || "—";
-    const getTeacherName = (id: string) => staff.find(s => s.id === id)?.name || "—";
+
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -45,19 +38,42 @@ export default function SubjectsPage() {
             const created = await SubjectService.create(newSubject);
             setSubjects([...subjects, created]);
             setIsModalOpen(false);
-            setNewSubject({ name: "", code: "", description: "", classId: "", teacherId: "", status: "ACTIVE" });
+            setNewSubject({ name: "", code: "", description: "", subjectType: "CORE", status: "ACTIVE" });
         } catch { alert("Failed to create subject"); }
+    };
+
+    const handleDelete = async (id: string, name: string) => {
+        if (!confirm(`Are you sure you want to delete ${name}? This will remove it globally.`)) return;
+        try {
+            await SubjectService.delete(id);
+            setSubjects(prev => prev.filter(s => s.id !== id));
+        } catch { alert("Failed to delete subject. It might be assigned to a class."); }
+    };
+
+    const generateCode = () => {
+        if (!newSubject.name || newSubject.name.trim() === "") {
+            alert("Please enter a Subject Name first to generate its code.");
+            return;
+        }
+        let prefix = newSubject.name.replace(/[^a-zA-Z0-9]/g, "").substring(0, 4).toUpperCase();
+        if (prefix.length < 4 && prefix.length > 0) {
+            prefix = prefix.padEnd(4, 'X'); // Pad with X if shorter than 4 chars
+        } else if (prefix.length === 0) {
+            prefix = "SUBJ";
+        }
+        const randomNum = Math.floor(100 + Math.random() * 900); // 3 digit number e.g. 100-999
+        setNewSubject({ ...newSubject, code: `${prefix}${randomNum}` });
     };
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background">
-            <Header title="Subject Management" />
+
             <main className="flex-1 overflow-y-auto p-6">
                 <div className="max-w-5xl mx-auto space-y-6">
                     <div className="flex justify-between items-center">
                         <div>
-                            <h2 className="text-3xl font-bold tracking-tight">Subjects</h2>
-                            <p className="text-muted-foreground mt-1">Manage subjects, assign to classes and teachers.</p>
+                            <h2 className="text-3xl font-bold tracking-tight">Global Subjects</h2>
+                            <p className="text-muted-foreground mt-1">Manage global subjects to be assigned to classes.</p>
                         </div>
                         <button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-blue-600 text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium text-sm">
                             <Plus className="w-4 h-4" /> Add Subject
@@ -75,9 +91,10 @@ export default function SubjectsPage() {
                                 <tr>
                                     <th className="p-4 font-semibold text-muted-foreground">Code</th>
                                     <th className="p-4 font-semibold text-muted-foreground">Subject Name</th>
-                                    <th className="p-4 font-semibold text-muted-foreground">Class</th>
-                                    <th className="p-4 font-semibold text-muted-foreground">Teacher</th>
+                                    <th className="p-4 font-semibold text-muted-foreground">Type</th>
+                                    <th className="p-4 font-semibold text-muted-foreground">Description</th>
                                     <th className="p-4 font-semibold text-muted-foreground">Status</th>
+                                    <th className="p-4 font-semibold text-muted-foreground text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -89,12 +106,21 @@ export default function SubjectsPage() {
                                     <tr key={s.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                                         <td className="p-4 font-mono text-xs font-bold text-primary">{s.code}</td>
                                         <td className="p-4 font-medium">{s.name}</td>
-                                        <td className="p-4 text-muted-foreground">{getClassName(s.classId)}</td>
-                                        <td className="p-4 text-muted-foreground">{getTeacherName(s.teacherId)}</td>
+                                        <td className="p-4 text-muted-foreground">{s.subjectType || "CORE"}</td>
+                                        <td className="p-4 text-muted-foreground truncate max-w-xs">{s.description || "—"}</td>
                                         <td className="p-4">
                                             <span className={`px-2 py-1 rounded-full text-xs font-bold ${s.status === "ACTIVE" ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
                                                 {s.status}
                                             </span>
+                                        </td>
+                                        <td className="p-4 text-right">
+                                            <button
+                                                onClick={() => handleDelete(s.id, s.name)}
+                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="Delete Subject"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -109,28 +135,28 @@ export default function SubjectsPage() {
                     <div className="bg-card w-full max-w-md border border-border rounded-xl shadow-xl p-6">
                         <h3 className="text-xl font-bold mb-4">Add Subject</h3>
                         <form onSubmit={handleCreate} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                                 <div><label className="text-sm font-medium mb-1 block">Name *</label>
-                                    <input required type="text" value={newSubject.name} onChange={e => setNewSubject({...newSubject, name: e.target.value})} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Mathematics" />
+                                    <input required type="text" value={newSubject.name} onChange={e => setNewSubject({ ...newSubject, name: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Mathematics" />
                                 </div>
-                                <div><label className="text-sm font-medium mb-1 block">Code *</label>
-                                    <input required type="text" value={newSubject.code} onChange={e => setNewSubject({...newSubject, code: e.target.value})} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="MATH101" />
+                                <div><label className="text-sm font-medium mb-1 flex items-center justify-between">Code <span className="text-[10px] text-muted-foreground font-normal ml-1">(Auto-generated if empty)</span></label>
+                                    <div className="flex gap-2">
+                                        <input type="text" value={newSubject.code} onChange={e => setNewSubject({ ...newSubject, code: e.target.value })} className="flex-1 bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. MATH010" />
+                                        <button type="button" onClick={generateCode} className="p-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-lg flex items-center justify-center transition-colors border border-border shrink-0" title="Generate Code">
+                                            <RefreshCw className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div><label className="text-sm font-medium mb-1 block">Description</label>
-                                <textarea value={newSubject.description} onChange={e => setNewSubject({...newSubject, description: e.target.value})} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" rows={2} />
+                                <textarea value={newSubject.description} onChange={e => setNewSubject({ ...newSubject, description: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" rows={2} />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="text-sm font-medium mb-1 block">Class</label>
-                                    <select value={newSubject.classId} onChange={e => setNewSubject({...newSubject, classId: e.target.value})} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                                        <option value="">Select...</option>
-                                        {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
-                                </div>
-                                <div><label className="text-sm font-medium mb-1 block">Teacher</label>
-                                    <select value={newSubject.teacherId} onChange={e => setNewSubject({...newSubject, teacherId: e.target.value})} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                                        <option value="">Select...</option>
-                                        {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            <div className="grid grid-cols-1 gap-4">
+                                <div><label className="text-sm font-medium mb-1 block">Subject Type *</label>
+                                    <select required value={newSubject.subjectType} onChange={e => setNewSubject({ ...newSubject, subjectType: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <option value="CORE">Core</option>
+                                        <option value="ELECTIVE">Elective</option>
+                                        <option value="OPTIONAL">Optional</option>
                                     </select>
                                 </div>
                             </div>

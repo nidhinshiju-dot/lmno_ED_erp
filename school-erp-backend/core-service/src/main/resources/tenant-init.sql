@@ -36,10 +36,12 @@ CREATE TABLE IF NOT EXISTS campuses (
     tenant_id VARCHAR
 );
 
-CREATE TABLE IF NOT EXISTS school_classes (
+CREATE TABLE IF NOT EXISTS classes (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
     name VARCHAR NOT NULL,
+    academic_year VARCHAR NOT NULL,
     grade_level INTEGER,
+    branch VARCHAR,
     tenant_id VARCHAR
 );
 
@@ -54,6 +56,7 @@ CREATE TABLE IF NOT EXISTS sections (
 CREATE TABLE IF NOT EXISTS staff (
     id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
     user_id VARCHAR NOT NULL,
+    employee_id VARCHAR UNIQUE,
     name VARCHAR NOT NULL,
     department VARCHAR NOT NULL,
     designation VARCHAR NOT NULL,
@@ -99,6 +102,30 @@ CREATE TABLE IF NOT EXISTS exams (
     exam_date DATE,
     total_marks INTEGER DEFAULT 100,
     status VARCHAR DEFAULT 'SCHEDULED'
+);
+
+CREATE TABLE IF NOT EXISTS exam_templates (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    name VARCHAR NOT NULL,
+    description TEXT,
+    tenant_id VARCHAR
+);
+
+CREATE TABLE IF NOT EXISTS exam_template_subjects (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    template_id VARCHAR NOT NULL,
+    subject_code VARCHAR NOT NULL,
+    day_offset INTEGER DEFAULT 0,
+    total_marks INTEGER DEFAULT 100
+);
+
+CREATE TABLE IF NOT EXISTS exam_schedules (
+    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    exam_id VARCHAR NOT NULL,
+    subject_id VARCHAR NOT NULL,
+    exam_date DATE,
+    start_time TIME,
+    end_time TIME
 );
 
 CREATE TABLE IF NOT EXISTS exam_results (

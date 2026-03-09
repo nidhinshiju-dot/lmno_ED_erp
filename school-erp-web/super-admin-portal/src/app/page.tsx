@@ -1,11 +1,13 @@
 "use client";
 
-import { Building2, Settings, Users, Activity, Menu, Bell } from "lucide-react";
+import { Building2, Settings, Users, Activity, Menu, Bell, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function DashboardPage() {
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const { user, logout } = useAuth();
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
@@ -46,12 +48,12 @@ export default function DashboardPage() {
         <div className="p-4 border-t border-border">
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-white shadow-md flex-shrink-0">
-                    S
+                    {user?.name?.charAt(0) || "S"}
                 </div>
                 {isSidebarOpen && (
                     <div className="truncate">
-                        <p className="text-sm font-semibold">Super Admin</p>
-                        <p className="text-xs text-muted-foreground truncate">root@platform.com</p>
+                        <p className="text-sm font-semibold">{user?.name || "Super Admin"}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user?.email || "admin@platform.com"}</p>
                     </div>
                 )}
             </div>
@@ -69,6 +71,10 @@ export default function DashboardPage() {
             <button className="p-2 relative text-muted-foreground hover:text-foreground transition-colors">
                 <Bell className="w-5 h-5" />
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+            <button onClick={logout} className="p-2 flex items-center gap-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100">
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Log Out</span>
             </button>
           </div>
         </header>

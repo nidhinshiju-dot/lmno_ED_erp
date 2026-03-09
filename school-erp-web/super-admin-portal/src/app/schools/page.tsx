@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SchoolService } from "@/lib/api";
-import { Building2, Plus, ToggleLeft, ToggleRight, ArrowLeft } from "lucide-react";
+import { Building2, Plus, ToggleLeft, ToggleRight, ArrowLeft, LogOut } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 interface School {
     id: string;
@@ -16,6 +17,7 @@ interface School {
 export default function SchoolsPage() {
     const [schools, setSchools] = useState<School[]>([]);
     const [loading, setLoading] = useState(true);
+    const { logout } = useAuth();
 
     useEffect(() => {
         loadSchools();
@@ -62,9 +64,15 @@ export default function SchoolsPage() {
             <main className="flex-1 flex flex-col">
                 <header className="h-16 flex items-center justify-between px-6 bg-white border-b border-[hsl(var(--border))]">
                     <h2 className="text-lg font-semibold">School Management</h2>
-                    <Link href="/schools/new" className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-white rounded-lg font-medium hover:opacity-90 transition-opacity shadow-sm">
-                        <Plus className="w-4 h-4" /> Onboard School
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        <Link href="/schools/new" className="inline-flex items-center gap-2 px-4 py-2 bg-[hsl(var(--primary))] text-white rounded-lg font-medium hover:opacity-90 transition-opacity shadow-sm">
+                            <Plus className="w-4 h-4" /> Onboard School
+                        </Link>
+                        <button onClick={logout} className="p-2 flex items-center gap-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100">
+                            <LogOut className="w-4 h-4" />
+                            <span className="hidden sm:inline">Log Out</span>
+                        </button>
+                    </div>
                 </header>
 
                 <div className="flex-1 overflow-auto p-6 lg:p-10">

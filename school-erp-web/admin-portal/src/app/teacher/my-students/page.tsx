@@ -32,13 +32,13 @@ export default function TeacherStudentsPage() {
 
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background">
-            <Header title="My Students" />
+
             <main className="flex-1 overflow-y-auto p-6">
                 <div className="max-w-5xl mx-auto space-y-6">
                     <div className="flex justify-between items-center">
                         <div>
                             <h2 className="text-3xl font-bold tracking-tight">My Students</h2>
-                            <p className="text-muted-foreground mt-1">Students in your class teacher sections.</p>
+                            <p className="text-muted-foreground mt-1">Students in your classes.</p>
                         </div>
                         <div className="text-sm text-muted-foreground font-medium">{filtered.length} students</div>
                     </div>

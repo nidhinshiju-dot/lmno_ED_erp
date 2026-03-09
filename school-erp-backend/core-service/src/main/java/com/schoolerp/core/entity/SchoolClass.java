@@ -23,4 +23,19 @@ public class SchoolClass {
 
     @Column(name = "academic_year", nullable = false)
     private String academicYear;
+
+    @Column(name = "grade_level")
+    private Integer gradeLevel;
+
+    @Column
+    private String branch;
+
+    @Column(columnDefinition = "integer default 40")
+    private Integer capacity;
+
+    @Column(name = "room_number")
+    private String roomNumber;
+
+    @Column(name = "class_teacher_id")
+    private String classTeacherId;
 }

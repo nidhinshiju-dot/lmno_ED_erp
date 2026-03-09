@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { StudentService, fetchWithAuth } from "@/lib/api";
-import { Plus, Search, MoreVertical, Loader2 } from "lucide-react";
+import { Plus, Search, MoreVertical, Loader2, Wand2 } from "lucide-react";
 
 interface Student {
     id: string;
@@ -14,6 +14,7 @@ interface Student {
 
 export default function StudentsPage() {
     const [students, setStudents] = useState<Student[]>([]);
+    const [classes, setClasses] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,19 +26,26 @@ export default function StudentsPage() {
         dob: "",
         parentContact: "",
         classId: "",
-        sectionId: "",
         guardianName: "",
         guardianRelation: ""
     });
 
     useEffect(() => {
-        const fetchStudents = async () => {
+        const fetchInitialData = async () => {
             try {
-                const data = await StudentService.getAll();
-                setStudents(data);
+                const [studData, clsData] = await Promise.all([
+                    StudentService.getAll(),
+                    fetchWithAuth("/classes")
+                ]);
+                setStudents(studData);
+                
+                // Sort classes
+                const sortedClasses = [...clsData].sort((a, b) => {
+                    if (a.gradeLevel !== b.gradeLevel) return (a.gradeLevel || 0) - (b.gradeLevel || 0);
+                    return a.name.localeCompare(b.name);
+                });
+                setClasses(sortedClasses);
             } catch (err) {
-                // Fallback to empty context if backend is unreachable 
-                // to prevent full app crash during Dev.
                 console.error("Failed to fetch students. Ensure the backend is running.", err);
                 setError("Could not connect to the Backend API. Are the gateway and core-service running?");
             } finally {
@@ -45,7 +53,7 @@ export default function StudentsPage() {
             }
         };
 
-        fetchStudents();
+        fetchInitialData();
     }, []);
 
     const handleCreateStudent = async (e: React.FormEvent) => {
@@ -57,6 +65,7 @@ export default function StudentsPage() {
                 name: newStudent.name,
                 dob: newStudent.dob || null,
                 parentContact: newStudent.parentContact || null,
+                classId: newStudent.classId,
                 userId: `u-${Math.random().toString(36).substring(7)}` // Mocked UserId for now
             };
 
@@ -67,10 +76,18 @@ export default function StudentsPage() {
 
             setStudents([...students, res]);
             setIsModalOpen(false);
-            setNewStudent({ admissionNumber: "", name: "", dob: "", parentContact: "", classId: "", sectionId: "", guardianName: "", guardianRelation: "" });
+            setNewStudent({ admissionNumber: "", name: "", dob: "", parentContact: "", classId: "", guardianName: "", guardianRelation: "" });
         } catch {
             alert("Failed to create student. Backend may not be reachable.");
         }
+    };
+
+    const generateAdmissionNumber = () => {
+        const today = new Date();
+        const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
+        const rand = Math.floor(1000 + Math.random() * 9000);
+        const admNo = `ADM-${dateStr}-${rand}`;
+        setNewStudent(prev => ({ ...prev, admissionNumber: admNo }));
     };
 
     return (
@@ -167,7 +184,16 @@ export default function StudentsPage() {
                                 </div>
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">Admission Number *</label>
-                                    <input required type="text" value={newStudent.admissionNumber} onChange={e => setNewStudent({ ...newStudent, admissionNumber: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="ADM-2026-001" />
+                                    <div className="relative">
+                                        <input required type="text" value={newStudent.admissionNumber} onChange={e => setNewStudent({ ...newStudent, admissionNumber: e.target.value })} className="w-full bg-muted border border-border rounded-lg pl-3 pr-24 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="ADM-20260309-1234" />
+                                        <button
+                                            type="button"
+                                            onClick={generateAdmissionNumber}
+                                            className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors"
+                                        >
+                                            <Wand2 className="w-3 h-3" /> Generate
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
@@ -176,24 +202,18 @@ export default function StudentsPage() {
                                     <input required type="date" value={newStudent.dob} onChange={e => setNewStudent({ ...newStudent, dob: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-medium mb-1 block">Class</label>
-                                    <select value={newStudent.classId} onChange={e => setNewStudent({ ...newStudent, classId: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                                        <option value="">Select Class</option>
-                                        <option value="class-10">Grade 10</option>
-                                        <option value="class-11">Grade 11</option>
-                                        <option value="class-12">Grade 12</option>
+                                    <label className="text-sm font-medium mb-1 block">Class & Division *</label>
+                                    <select required value={newStudent.classId} onChange={e => setNewStudent({ ...newStudent, classId: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <option value="">Select Class & Division</option>
+                                        {classes.map(c => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.name}{c.branch ? ` (${c.branch})` : ''}{c.roomNumber ? ` — Div ${c.roomNumber}` : ''}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-sm font-medium mb-1 block">Section</label>
-                                    <select value={newStudent.sectionId} onChange={e => setNewStudent({ ...newStudent, sectionId: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
-                                        <option value="">Select Section</option>
-                                        <option value="A">Section A</option>
-                                        <option value="B">Section B</option>
-                                    </select>
-                                </div>
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">Parent Contact *</label>
                                     <input required type="text" value={newStudent.parentContact} onChange={e => setNewStudent({ ...newStudent, parentContact: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="+91 98765 43210" />

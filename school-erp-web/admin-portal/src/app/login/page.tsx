@@ -48,7 +48,7 @@ export default function LoginPage() {
                             <BookOpen className="w-7 h-7 text-white" />
                         </div>
                         <h1 className="text-2xl font-bold text-[#0F172A]">Welcome back</h1>
-                        <p className="text-sm text-[#475569] mt-1.5 text-center">Sign in to your School ERP Admin Dashboard</p>
+                        <p className="text-sm text-[#475569] mt-1.5 text-center">Sign in to your Lmno Campus Admin Dashboard</p>
                     </div>
 
                     {/* Error Alert */}
@@ -107,7 +107,7 @@ export default function LoginPage() {
                     {/* Footer */}
                     <div className="mt-6 pt-5 border-t border-[#E2E8F0] text-center">
                         <p className="text-xs text-[#94A3B8]">
-                            School ERP Platform &bull; Admin Dashboard
+                            Lmno Campus &bull; Admin Dashboard
                         </p>
                     </div>
                 </div>
