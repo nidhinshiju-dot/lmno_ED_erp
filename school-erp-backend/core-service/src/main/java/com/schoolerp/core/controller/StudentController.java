@@ -34,32 +34,45 @@ public class StudentController {
     }
 
     @GetMapping("/parent/{parentId}")
-    public List<Student> getByParentId(@PathVariable String parentId) {
+    public List<Student> getByParentId(@PathVariable("parentId") String parentId) {
         return studentService.getByParentId(parentId);
     }
 
     @GetMapping("/status/{status}")
-    public List<Student> getByStatus(@PathVariable String status) {
+    public List<Student> getByStatus(@PathVariable("status") String status) {
         return studentService.getByStatus(status);
     }
 
     @GetMapping("/class/{classId}")
-    public List<Student> getByClass(@PathVariable String classId) {
+    public List<Student> getByClass(@PathVariable("classId") String classId) {
         return studentService.getByClassId(classId);
     }
 
+    @GetMapping("/check-parent")
+    public ResponseEntity<java.util.Map<String, String>> checkParent(@RequestParam("contact") String contact) {
+        return studentService.getFirstStudentByParentContact(contact)
+                .map(student -> {
+                    java.util.Map<String, String> response = new java.util.HashMap<>();
+                    response.put("parentId", student.getParentId());
+                    response.put("guardianName", student.getGuardianName());
+                    response.put("guardianRelation", student.getGuardianRelation());
+                    return ResponseEntity.ok(response);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<Student> updateStudent(@PathVariable String id, @Valid @RequestBody Student student) {
+    public ResponseEntity<Student> updateStudent(@PathVariable("id") String id, @Valid @RequestBody Student student) {
         return ResponseEntity.ok(studentService.updateStudent(id, student));
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Student> updateStatus(@PathVariable String id, @Valid @RequestBody java.util.Map<String, String> body) {
+    public ResponseEntity<Student> updateStatus(@PathVariable("id") String id, @RequestBody java.util.Map<String, String> body) {
         return ResponseEntity.ok(studentService.updateStatus(id, body.get("status")));
     }
 
     @PostMapping("/{id}/transfer")
-    public ResponseEntity<Student> transfer(@PathVariable String id, @Valid @RequestBody java.util.Map<String, String> body) {
+    public ResponseEntity<Student> transfer(@PathVariable("id") String id, @RequestBody java.util.Map<String, String> body) {
         return ResponseEntity.ok(studentService.transferStudent(id, body.get("classId")));
     }
 
@@ -69,7 +82,7 @@ public class StudentController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") String id) {
         // Implementation stub added by QA Remediation
         return ResponseEntity.noContent().build();
     }

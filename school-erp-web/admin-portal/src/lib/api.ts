@@ -3,9 +3,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/a
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const token = localStorage.getItem("erp_token");
 
-    const defaultHeaders: Record<string, string> = {
-        "Content-Type": "application/json",
-    };
+    const defaultHeaders: Record<string, string> = {};
+    if (!(typeof FormData !== "undefined" && options.body instanceof FormData)) {
+        defaultHeaders["Content-Type"] = "application/json";
+    }
 
     if (token) {
         defaultHeaders["Authorization"] = `Bearer ${token}`;
@@ -44,6 +45,7 @@ export const StudentService = {
     getAll: () => fetchWithAuth("/students"),
     getById: (id: string) => fetchWithAuth(`/students/${id}`),
     update: (id: string, data: Record<string, unknown>) => fetchWithAuth(`/students/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    checkParent: (contact: string) => fetchWithAuth(`/students/check-parent?contact=${encodeURIComponent(contact)}`),
 };
 
 export const StaffService = {
@@ -225,6 +227,13 @@ export const FileService = {
     getByCategory: (category: string) => fetchWithAuth(`/files/category/${category}`),
     create: (data: Record<string, unknown>) => fetchWithAuth("/files", { method: "POST", body: JSON.stringify(data) }),
     delete: (id: string) => fetchWithAuth(`/files/${id}`, { method: "DELETE" }),
+    upload: (file: File, type: string, category: string) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("type", type);
+        formData.append("category", category);
+        return fetchWithAuth("/files/upload", { method: "POST", body: formData as any });
+    },
 };
 
 export const ReportService = {

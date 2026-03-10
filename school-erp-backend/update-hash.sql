@@ -1,1 +1,3 @@
-UPDATE users SET password = '$2a$10$rcBAa103CGT1NK3vMDCANuuzoqWDGQwK6LfUedjVtkt/qle9kZQbC';
+UPDATE users
+SET password = '$2b$10$.3IcvBMDNpON/4gLVFukhu3LpxCca9VELpy0n/Yyt7TIZkPHMRZ0G'
+WHERE email = 'admin@tella.com';

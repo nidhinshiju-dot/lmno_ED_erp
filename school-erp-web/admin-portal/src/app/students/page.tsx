@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { StudentService, ClassService, StudentManagementService, fetchWithAuth } from "@/lib/api";
-import { Plus, Search, Loader2, Wand2, ArrowUpCircle, Filter } from "lucide-react";
+import { StudentService, ClassService, StudentManagementService, fetchWithAuth, FileService } from "@/lib/api";
+import { Plus, Search, Loader2, Wand2, ArrowUpCircle, Filter, Upload, FileDown } from "lucide-react";
 import Link from "next/link";
+import { BulkImportModal } from "@/components/BulkImportModal";
 
 interface Student {
     id: string;
@@ -20,6 +21,7 @@ export default function StudentsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
     const [isPromoteOpen, setIsPromoteOpen] = useState(false);
     const [selectedClass, setSelectedClass] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
@@ -31,31 +33,35 @@ export default function StudentsPage() {
         admissionNumber: "",
         name: "",
         dob: "",
+        countryCode: "+91",
         parentContact: "",
         classId: "",
         guardianName: "",
         guardianRelation: ""
     });
+    const [photoFile, setPhotoFile] = useState<File | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const fetchInitialData = async () => {
+        try {
+            const [studData, clsData] = await Promise.all([
+                StudentService.getAll(),
+                fetchWithAuth("/classes")
+            ]);
+            setAllStudents(studData);
+            const sortedClasses = [...clsData].sort((a, b) => {
+                if (a.gradeLevel !== b.gradeLevel) return (a.gradeLevel || 0) - (b.gradeLevel || 0);
+                return a.name.localeCompare(b.name);
+            });
+            setClasses(sortedClasses);
+        } catch (err) {
+            setError("Could not connect to the Backend API. Are the gateway and core-service running?");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchInitialData = async () => {
-            try {
-                const [studData, clsData] = await Promise.all([
-                    StudentService.getAll(),
-                    fetchWithAuth("/classes")
-                ]);
-                setAllStudents(studData);
-                const sortedClasses = [...clsData].sort((a, b) => {
-                    if (a.gradeLevel !== b.gradeLevel) return (a.gradeLevel || 0) - (b.gradeLevel || 0);
-                    return a.name.localeCompare(b.name);
-                });
-                setClasses(sortedClasses);
-            } catch (err) {
-                setError("Could not connect to the Backend API. Are the gateway and core-service running?");
-            } finally {
-                setIsLoading(false);
-            }
-        };
         fetchInitialData();
     }, []);
 
@@ -72,26 +78,84 @@ export default function StudentsPage() {
     const displayedStudents = allStudents.filter(s => {
         if (!searchQuery) return true;
         const q = searchQuery.toLowerCase();
-        return s.name.toLowerCase().includes(q) || s.admissionNumber.toLowerCase().includes(q);
+        return s.name.toLowerCase().includes(q) || s.admissionNumber.toLowerCase().includes(q) || (s.parentContact && s.parentContact.includes(q));
     });
 
     const handleCreateStudent = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // 1. Phone validation
+        const phoneRegex = /^[0-9]+$/;
+        if (!phoneRegex.test(newStudent.parentContact)) {
+            alert("Phone number must contain only numbers. Symbols and spaces are not allowed.");
+            return;
+        }
+
+        setIsSubmitting(true);
         try {
+            let parentId = null;
+            let guardianName = newStudent.guardianName;
+            let guardianRelation = newStudent.guardianRelation;
+
+            // 2. Duplicate Parent Check
+            const fullContact = `${newStudent.parentContact}`;
+            try {
+                const parentMatch = await StudentService.checkParent(fullContact);
+                if (parentMatch && parentMatch.parentId) {
+                    const existingName = parentMatch.guardianName ? ` (${parentMatch.guardianName})` : "";
+                    const confirmLink = window.confirm(`Parent phone number already exists${existingName}. Link this new student to the same parent account?`);
+                    if (!confirmLink) {
+                        setIsSubmitting(false);
+                        return; // User cancelled
+                    }
+                    parentId = parentMatch.parentId;
+                    guardianName = parentMatch.guardianName || guardianName;
+                    guardianRelation = parentMatch.guardianRelation || guardianRelation;
+                }
+            } catch (err: any) {
+                // 404 Not Found is expected if parent does not exist, safe to proceed
+            }
+
+            // 3. Optional Photo Upload
+            let photoUrl = null;
+            if (photoFile) {
+                try {
+                    const uploadRes = await FileService.upload(photoFile, "student_photo", "student_profiles");
+                    photoUrl = uploadRes.filePath;
+                } catch (uploadErr) {
+                    alert("Failed to upload photo. Proceeding without photo.");
+                }
+            }
+
             const payload = {
-                admissionNumber: newStudent.admissionNumber,
-                name: newStudent.name,
-                dob: newStudent.dob || null,
-                parentContact: newStudent.parentContact || null,
-                classId: newStudent.classId,
+                ...newStudent,
+                guardianName,
+                guardianRelation,
+                parentId,
+                photoUrl,
                 userId: `u-${Math.random().toString(36).substring(7)}`
             };
+
             const res = await fetchWithAuth("/students", { method: "POST", body: JSON.stringify(payload) });
             setAllStudents([...allStudents, res]);
             setIsModalOpen(false);
-            setNewStudent({ admissionNumber: "", name: "", dob: "", parentContact: "", classId: "", guardianName: "", guardianRelation: "" });
-        } catch {
-            alert("Failed to create student. Backend may not be reachable.");
+            setNewStudent({ admissionNumber: "", name: "", dob: "", countryCode: "+91", parentContact: "", classId: "", guardianName: "", guardianRelation: "" });
+            setPhotoFile(null);
+            
+            // Reload list to apply server-side sorting if needed
+            if (selectedClass) {
+                const updatedList = await StudentManagementService.getByClass(selectedClass);
+                setAllStudents(updatedList);
+            } else {
+                const updatedList = await StudentService.getAll();
+                setAllStudents(updatedList);
+            }
+
+        } catch (err) {
+            console.error("Student creation failed", err);
+            alert("Failed to create student. Please verify all inputs and try again.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -137,6 +201,12 @@ export default function StudentsPage() {
                         <ArrowUpCircle className="w-4 h-4" /> Promote Students
                     </button>
                     <button
+                        onClick={() => setIsBulkImportOpen(true)}
+                        className="border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium text-sm"
+                    >
+                        <FileDown className="w-4 h-4" /> Bulk Import
+                    </button>
+                    <button
                         onClick={() => setIsModalOpen(true)}
                         className="bg-primary hover:bg-blue-600 text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium text-sm"
                     >
@@ -154,7 +224,7 @@ export default function StudentsPage() {
                             type="text"
                             value={searchQuery}
                             onChange={e => setSearchQuery(e.target.value)}
-                            placeholder="Search by name or ID..."
+                            placeholder="Search by name, ID, or phone..."
                             className="w-full bg-muted border border-border rounded-lg pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
                         />
                     </div>
@@ -164,13 +234,16 @@ export default function StudentsPage() {
                         <select
                             value={selectedClass}
                             onChange={e => setSelectedClass(e.target.value)}
-                            className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
                         >
                             <option value="">All Classes</option>
                             {classes.map(c => (
                                 <option key={c.id} value={c.id}>{c.name}{c.branch ? ` (${c.branch})` : ""}</option>
                             ))}
                         </select>
+                        {selectedClass && (
+                            <button onClick={() => setSelectedClass("")} className="text-xs text-blue-600 hover:underline px-2">Reset Filter</button>
+                        )}
                     </div>
                     <div className="ml-auto text-sm text-muted-foreground font-medium">
                         {displayedStudents.length} {displayedStudents.length !== allStudents.length ? `of ${allStudents.length}` : "Total"} Records
@@ -229,7 +302,7 @@ export default function StudentsPage() {
             {/* Add Student Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-card w-full max-w-lg border border-border rounded-xl shadow-xl p-6 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+                    <div className="bg-card w-full max-w-2xl border border-border rounded-xl shadow-xl p-6 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
                         <h3 className="text-xl font-bold mb-4">Register New Student</h3>
                         <form onSubmit={handleCreateStudent} className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
@@ -254,7 +327,7 @@ export default function StudentsPage() {
                                 </div>
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">Class & Division *</label>
-                                    <select required value={newStudent.classId} onChange={e => setNewStudent({ ...newStudent, classId: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <select required value={newStudent.classId} onChange={e => setNewStudent({ ...newStudent, classId: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
                                         <option value="">Select Class & Division</option>
                                         {classes.map(c => (
                                             <option key={c.id} value={c.id}>
@@ -264,11 +337,36 @@ export default function StudentsPage() {
                                     </select>
                                 </div>
                             </div>
-                            <div>
-                                <label className="text-sm font-medium mb-1 block">Parent Contact *</label>
-                                <input required type="text" value={newStudent.parentContact} onChange={e => setNewStudent({ ...newStudent, parentContact: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="+91 98765 43210" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">Parent Contact *</label>
+                                    <div className="flex gap-2">
+                                        <select 
+                                            value={newStudent.countryCode} 
+                                            onChange={e => setNewStudent({ ...newStudent, countryCode: e.target.value })} 
+                                            className="w-1/3 bg-muted border border-border rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
+                                        >
+                                            <option value="+91">+91 (IN)</option>
+                                            <option value="+1">+1 (US/CA)</option>
+                                            <option value="+61">+61 (AU)</option>
+                                            <option value="+971">+971 (UAE)</option>
+                                        </select>
+                                        <input required type="tel" value={newStudent.parentContact} onChange={e => setNewStudent({ ...newStudent, parentContact: e.target.value })} className="w-2/3 bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" placeholder="9876543210" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium mb-1 block">Student Photo</label>
+                                    <div className="relative">
+                                        <input type="file" accept="image/*" onChange={e => setPhotoFile(e.target.files?.[0] || null)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+                                        <div className="w-full bg-muted border border-dashed border-border flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted/80 transition-colors">
+                                            <Upload className="w-4 h-4 text-primary" />
+                                            <span className="truncate">{photoFile ? photoFile.name : "Choose an image..."}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="border-t border-border pt-4">
+                            
+                            <div className="border-t border-border mt-6 pt-4">
                                 <h4 className="text-sm font-semibold mb-3">Parent / Guardian Details</h4>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
@@ -277,7 +375,7 @@ export default function StudentsPage() {
                                     </div>
                                     <div>
                                         <label className="text-sm font-medium mb-1 block">Relationship</label>
-                                        <select value={newStudent.guardianRelation} onChange={e => setNewStudent({ ...newStudent, guardianRelation: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <select value={newStudent.guardianRelation} onChange={e => setNewStudent({ ...newStudent, guardianRelation: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer">
                                             <option value="">Select</option>
                                             <option value="Father">Father</option>
                                             <option value="Mother">Mother</option>
@@ -286,9 +384,12 @@ export default function StudentsPage() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-border">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors">Cancel</button>
-                                <button type="submit" className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-blue-600 rounded-lg transition-colors">Register Student</button>
+                            <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-border">
+                                <button type="button" disabled={isSubmitting} onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted rounded-lg transition-colors">Cancel</button>
+                                <button type="submit" disabled={isSubmitting} className="px-5 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-blue-600 rounded-lg transition-colors flex items-center gap-2">
+                                    {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                                    {isSubmitting ? "Registering..." : "Register Student"}
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -331,6 +432,17 @@ export default function StudentsPage() {
                         </form>
                     </div>
                 </div>
+            )}
+            {/* Bulk Import Modal */}
+            {isBulkImportOpen && (
+                <BulkImportModal
+                    classes={classes}
+                    onClose={() => setIsBulkImportOpen(false)}
+                    onImportSuccess={() => {
+                        setIsBulkImportOpen(false);
+                        fetchInitialData();
+                    }}
+                />
             )}
         </div>
     );

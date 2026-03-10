@@ -35,6 +35,15 @@ public class Student {
     @Column(name = "parent_contact")
     private String parentContact;
 
+    @Column(name = "country_code")
+    private String countryCode;
+
+    @Column(name = "guardian_name")
+    private String guardianName;
+
+    @Column(name = "guardian_relation")
+    private String guardianRelation;
+
     @Column(name = "parent_id")
     private String parentId;
 

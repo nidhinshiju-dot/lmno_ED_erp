@@ -23,6 +23,9 @@ public class StudentService {
     }
 
     public Student createStudent(Student student) {
+        if (student.getParentId() == null || student.getParentId().trim().isEmpty()) {
+            student.setParentId("p-" + java.util.UUID.randomUUID().toString().substring(0, 8));
+        }
         return studentRepository.save(student);
     }
 
@@ -44,6 +47,9 @@ public class StudentService {
             s.setDob(updated.getDob());
             s.setAddress(updated.getAddress());
             s.setParentContact(updated.getParentContact());
+            s.setCountryCode(updated.getCountryCode());
+            s.setGuardianName(updated.getGuardianName());
+            s.setGuardianRelation(updated.getGuardianRelation());
             s.setParentId(updated.getParentId());
             s.setClassId(updated.getClassId());
             s.setPhotoUrl(updated.getPhotoUrl());
@@ -71,5 +77,9 @@ public class StudentService {
             s.setClassId(toClassId);
         });
         return studentRepository.saveAll(students);
+    }
+
+    public Optional<Student> getFirstStudentByParentContact(String parentContact) {
+        return studentRepository.findFirstByParentContact(parentContact);
     }
 }
