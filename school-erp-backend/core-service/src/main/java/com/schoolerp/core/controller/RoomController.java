@@ -3,6 +3,8 @@ package com.schoolerp.core.controller;
 import com.schoolerp.core.entity.Room;
 import com.schoolerp.core.entity.RoomType;
 import com.schoolerp.core.entity.SubjectRoomRequirement;
+import com.schoolerp.core.dto.LabGroupDto;
+import com.schoolerp.core.dto.SubjectLabGroupRequirementDto;
 import com.schoolerp.core.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -79,6 +81,42 @@ public class RoomController {
     @DeleteMapping("/requirements/{id}")
     public ResponseEntity<Void> deleteRequirement(@PathVariable String id) {
         service.deleteRequirement(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── Lab Groups ──────────────────────────────────────────────────────────
+
+    @GetMapping("/lab-groups")
+    public List<LabGroupDto> getLabGroups() {
+        return service.getAllLabGroups();
+    }
+
+    @PostMapping("/lab-groups")
+    public LabGroupDto createLabGroup(@Valid @RequestBody LabGroupDto lg) {
+        return service.createLabGroup(lg);
+    }
+
+    @DeleteMapping("/lab-groups/{id}")
+    public ResponseEntity<Void> deleteLabGroup(@PathVariable String id) {
+        service.deleteLabGroup(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── Subject Lab Group Requirements ───────────────────────────────────────
+
+    @GetMapping("/lab-group-requirements")
+    public List<SubjectLabGroupRequirementDto> getSubjectLabGroupRequirements() {
+        return service.getAllSubjectLabGroupRequirements();
+    }
+
+    @PostMapping("/lab-group-requirements")
+    public SubjectLabGroupRequirementDto createSubjectLabGroupRequirement(@Valid @RequestBody SubjectLabGroupRequirementDto req) {
+        return service.saveSubjectLabGroupRequirement(req);
+    }
+
+    @DeleteMapping("/lab-group-requirements/{id}")
+    public ResponseEntity<Void> deleteSubjectLabGroupRequirement(@PathVariable String id) {
+        service.deleteSubjectLabGroupRequirement(id);
         return ResponseEntity.noContent().build();
     }
 }

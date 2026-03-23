@@ -9,6 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+import java.util.stream.Collectors;
+
 /**
  * Constraint-based timetable generator.
  *
@@ -33,9 +35,13 @@ public class TimetableGeneratorEngine {
     private final TeacherAvailabilityRepository availabilityRepository;
     private final RoomRepository roomRepository;
     private final SubjectRoomRequirementRepository roomRequirementRepository;
+    private final SubjectLabGroupRequirementRepository subjectLabGroupRequirementRepository;
+    private final LabGroupRoomRepository labGroupRoomRepository;
+    private final StaffRepository staffRepository;
+    private final SchoolClassRepository classRepository;
 
     @Transactional
-    public GenerationResultDto generate(String timetableId) {
+    public GenerationResultDto generate(String timetableId, boolean isClassTeacherFirstPeriod) {
         try {
             // Clear existing unlocked slots
             classTimetableRepository.deleteUnlockedByTimetableId(timetableId);
@@ -51,113 +57,257 @@ public class TimetableGeneratorEngine {
             }
 
             List<ClassSubjectTeacher> assignments = cstRepository.findAll();
+            Map<String, Staff> staffMap = staffRepository.findAll().stream().collect(Collectors.toMap(Staff::getId, s -> s));
 
-            // Build slot requirements: expand periodsPerWeek
-            List<ClassSubjectTeacher> slotRequirements = new ArrayList<>();
+            // Validate teacher workloads
+            Map<String, Integer> teacherAllocatedPeriods = new HashMap<>();
             for (ClassSubjectTeacher cst : assignments) {
-                for (int i = 0; i < cst.getPeriodsPerWeek(); i++) {
-                    slotRequirements.add(cst);
+                teacherAllocatedPeriods.put(cst.getTeacherId(), teacherAllocatedPeriods.getOrDefault(cst.getTeacherId(), 0) + cst.getPeriodsPerWeek());
+            }
+
+            for (Map.Entry<String, Integer> entry : teacherAllocatedPeriods.entrySet()) {
+                Staff staff = staffMap.get(entry.getKey());
+                if (staff != null && staff.getMaxPeriods() != null && entry.getValue() > staff.getMaxPeriods()) {
+                    return new GenerationResultDto(false, 0, 0,
+                            List.of("Teacher " + staff.getName() + " workload exceeded: assigned " + entry.getValue() + " but max is " + staff.getMaxPeriods()),
+                            "Workload Validation Failed");
                 }
             }
 
-            // Shuffle for randomized placement
+            // Group assignments by classId + subjectId
+            Map<String, List<ClassSubjectTeacher>> groupedAssignments = new HashMap<>();
+            for (ClassSubjectTeacher cst : assignments) {
+                String key = cst.getClassId() + "|" + cst.getSubjectId();
+                groupedAssignments.computeIfAbsent(key, k -> new ArrayList<>()).add(cst);
+            }
+
+            // Build slot requirements
+            List<List<ClassSubjectTeacher>> slotRequirements = new ArrayList<>();
+            int totalExpectedSlots = 0;
+
+            for (List<ClassSubjectTeacher> group : groupedAssignments.values()) {
+                if (group.isEmpty()) continue;
+                ClassSubjectTeacher primary = group.get(0);
+                int blocksNum = primary.getConsecutiveBlocks() != null && primary.getConsecutiveBlocks() > 0 ? primary.getConsecutiveBlocks() : 1;
+                int sessions = (int) Math.ceil((double) primary.getPeriodsPerWeek() / blocksNum);
+                
+                if (Boolean.TRUE.equals(primary.getIsLab())) {
+                    sessions = 1;
+                    totalExpectedSlots += blocksNum;
+                } else {
+                    totalExpectedSlots += primary.getPeriodsPerWeek();
+                }
+
+                for (int i = 0; i < sessions; i++) {
+                    slotRequirements.add(group);
+                }
+            }
+
             Collections.shuffle(slotRequirements);
 
-            // Build in-memory availability sets for speed
-            Set<String> teacherBusySet = new HashSet<>(); // timetableId+teacherId+dayId+blockId
-            Set<String> classBusySet = new HashSet<>(); // timetableId+classId+dayId+blockId
-            Set<String> roomBusySet = new HashSet<>(); // timetableId+roomId+dayId+blockId
+            Set<String> teacherBusySet = new HashSet<>();
+            Set<String> classBusySet = new HashSet<>();
+            Set<String> roomBusySet = new HashSet<>();
             Map<String, Set<String>> teacherUnavailable = buildUnavailabilityMap();
 
             List<String> conflicts = new ArrayList<>();
             int scheduled = 0;
 
-            for (ClassSubjectTeacher req : slotRequirements) {
+            // Class Teacher First Period Logic
+            if (isClassTeacherFirstPeriod && !periodBlocks.isEmpty()) {
+                PeriodBlock firstPeriod = periodBlocks.get(0);
+                Map<String, SchoolClass> classMap = classRepository.findAll().stream().collect(Collectors.toMap(SchoolClass::getId, c -> c));
+
+                for (SchoolClass sc : classMap.values()) {
+                    if (sc.getClassTeacherId() == null) continue;
+                    
+                    // Find the subject(s) this teacher teaches for this class
+                    List<ClassSubjectTeacher> teacherSubjectsForClass = assignments.stream()
+                        .filter(a -> a.getClassId().equals(sc.getId()) && a.getTeacherId().equals(sc.getClassTeacherId()) && (a.getIsLab() == null || !a.getIsLab()))
+                        .collect(Collectors.toList());
+                    
+                    if (teacherSubjectsForClass.isEmpty()) continue;
+
+                    // Group by subjectId. For simplicity, pick the first lecture subject they teach.
+                    ClassSubjectTeacher cstToAssign = teacherSubjectsForClass.get(0);
+                    List<ClassSubjectTeacher> groupToAssign = groupedAssignments.get(cstToAssign.getClassId() + "|" + cstToAssign.getSubjectId());
+                    
+                    for (WorkingDay day : activeDays) {
+                        String dayBlockKey = day.getId() + "-" + firstPeriod.getId();
+                        String classKey = sc.getId() + "-" + dayBlockKey;
+                        String teacherKey = sc.getClassTeacherId() + "-" + dayBlockKey;
+
+                        if (!classBusySet.contains(classKey) && !teacherBusySet.contains(teacherKey) && 
+                            (!teacherUnavailable.containsKey(sc.getClassTeacherId()) || !teacherUnavailable.get(sc.getClassTeacherId()).contains(day.getId() + "-" + firstPeriod.getId()))) {
+                            
+                            // Check if this group has remaining sessions in slotRequirements
+                            boolean removed = slotRequirements.remove(groupToAssign);
+                            if (removed) {
+                                // Assign it!
+                                for (ClassSubjectTeacher t : groupToAssign) {
+                                    ClassTimetable ct = new ClassTimetable();
+                                    ct.setTimetableId(timetableId);
+                                    ct.setClassId(t.getClassId());
+                                    ct.setDayId(day.getId());
+                                    ct.setBlockId(firstPeriod.getId());
+                                    ct.setClassSubjectTeacherId(t.getId());
+                                    ct.setIsLocked(false);
+                                    classTimetableRepository.save(ct);
+
+                                    TeacherSchedule ts = new TeacherSchedule();
+                                    ts.setTimetableId(timetableId);
+                                    ts.setTeacherId(t.getTeacherId());
+                                    ts.setDayId(day.getId());
+                                    ts.setBlockId(firstPeriod.getId());
+                                    ts.setClassId(t.getClassId());
+                                    ts.setSubjectId(t.getSubjectId());
+                                    teacherScheduleRepository.save(ts);
+                                    
+                                    teacherBusySet.add(t.getTeacherId() + "-" + dayBlockKey);
+                                }
+                                classBusySet.add(classKey);
+                                scheduled += 1;
+                            } else {
+                                // No more sessions left for this subject, break out of day loop for this class teacher
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (List<ClassSubjectTeacher> reqGroup : slotRequirements) {
+                ClassSubjectTeacher primary = reqGroup.get(0);
                 boolean placed = false;
 
                 List<WorkingDay> shuffledDays = new ArrayList<>(activeDays);
                 Collections.shuffle(shuffledDays);
 
                 for (WorkingDay day : shuffledDays) {
-                    List<PeriodBlock> shuffledBlocks = new ArrayList<>(periodBlocks);
-                    Collections.shuffle(shuffledBlocks);
+                    int consec = primary.getConsecutiveBlocks() != null && primary.getConsecutiveBlocks() > 0 ? primary.getConsecutiveBlocks() : 1;
+                    
+                    List<Integer> startIndices = new ArrayList<>();
+                    for (int i = 0; i <= periodBlocks.size() - consec; i++) {
+                        startIndices.add(i);
+                    }
+                    Collections.shuffle(startIndices);
 
-                    for (PeriodBlock block : shuffledBlocks) {
-                        String teacherKey = key(timetableId, req.getTeacherId(), day.getId(), block.getId());
-                        String classKey = key(timetableId, req.getClassId(), day.getId(), block.getId());
+                    List<Integer> strictIndices = new ArrayList<>();
+                    List<Integer> relaxedIndices = new ArrayList<>();
+                    for (int startIndex : startIndices) {
+                        boolean isStrict = true;
+                        if (consec > 1) {
+                            for (int k = 0; k < consec - 1; k++) {
+                                PeriodBlock curr = periodBlocks.get(startIndex + k);
+                                PeriodBlock next = periodBlocks.get(startIndex + k + 1);
+                                if (next.getOrderIndex() - curr.getOrderIndex() > 1) {
+                                    isStrict = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (isStrict) strictIndices.add(startIndex);
+                        else relaxedIndices.add(startIndex);
+                    }
 
-                        // Check teacher busy
-                        if (teacherBusySet.contains(teacherKey))
-                            continue;
-                        // Check class busy
-                        if (classBusySet.contains(classKey))
-                            continue;
-                        // Check teacher availability
-                        String unavailKey = req.getTeacherId() + "|" + day.getId() + "|" + block.getId();
-                        if (teacherUnavailable.getOrDefault(req.getTeacherId(), Collections.emptySet())
-                                .contains(unavailKey)) {
-                            continue;
+                    List<Integer> prioritizedIndices = new ArrayList<>(strictIndices);
+                    prioritizedIndices.addAll(relaxedIndices);
+
+                    for (int startIndex : prioritizedIndices) {
+                        List<PeriodBlock> window = periodBlocks.subList(startIndex, startIndex + consec);
+                        boolean windowValid = true;
+
+                        // Check teacher availability & conflicts for the entire window for ALL teachers in group
+                        for (PeriodBlock block : window) {
+                            String classKey = key(timetableId, primary.getClassId(), day.getId(), block.getId());
+                            if (classBusySet.contains(classKey)) {
+                                windowValid = false;
+                                break;
+                            }
+                            for (ClassSubjectTeacher tReq : reqGroup) {
+                                String teacherKey = key(timetableId, tReq.getTeacherId(), day.getId(), block.getId());
+                                String unavailKey = tReq.getTeacherId() + "|" + day.getId() + "|" + block.getId();
+                                if (teacherBusySet.contains(teacherKey) || teacherUnavailable.getOrDefault(tReq.getTeacherId(), Collections.emptySet()).contains(unavailKey)) {
+                                    windowValid = false;
+                                    break;
+                                }
+                            }
+                            if (!windowValid) break;
                         }
 
-                        // Assign room
-                        String assignedRoomId = findRoom(req.getSubjectId(), timetableId, day.getId(), block.getId(),
-                                roomBusySet);
-
-                        // Create slot
-                        ClassTimetable slot = new ClassTimetable();
-                        slot.setTimetableId(timetableId);
-                        slot.setClassId(req.getClassId());
-                        slot.setDayId(day.getId());
-                        slot.setBlockId(block.getId());
-                        slot.setClassSubjectTeacherId(req.getId());
-                        slot.setRoomId(assignedRoomId);
-                        slot.setIsLocked(false);
-                        classTimetableRepository.save(slot);
-
-                        // Create denormalized teacher schedule
-                        TeacherSchedule ts = new TeacherSchedule();
-                        ts.setTimetableId(timetableId);
-                        ts.setTeacherId(req.getTeacherId());
-                        ts.setDayId(day.getId());
-                        ts.setBlockId(block.getId());
-                        ts.setClassId(req.getClassId());
-                        ts.setSubjectId(req.getSubjectId());
-                        ts.setRoomId(assignedRoomId);
-                        teacherScheduleRepository.save(ts);
-
-                        // Mark busy
-                        teacherBusySet.add(teacherKey);
-                        classBusySet.add(classKey);
-                        if (assignedRoomId != null) {
-                            roomBusySet.add(key(timetableId, assignedRoomId, day.getId(), block.getId()));
+                        List<String> assignedRoomIds = new ArrayList<>();
+                        if (windowValid) {
+                            assignedRoomIds = findRoomsForWindow(primary.getSubjectId(), timetableId, day.getId(), window, roomBusySet);
+                            
+                            boolean requiresRoomType = roomRequirementRepository.findBySubjectIdAndIsRequiredTrue(primary.getSubjectId()).isPresent();
+                            boolean requiresLabGroup = subjectLabGroupRequirementRepository.findBySubjectId(primary.getSubjectId()).isPresent();
+                            
+                            if ((requiresRoomType || requiresLabGroup) && assignedRoomIds.isEmpty()) {
+                                windowValid = false;
+                            }
                         }
 
-                        placed = true;
-                        scheduled++;
-                        break;
+                        if (windowValid) {
+                            for (PeriodBlock block : window) {
+                                List<String> loopRoomIds = assignedRoomIds.isEmpty() ? Collections.singletonList((String) null) : assignedRoomIds;
+                                
+                                int maxIterations = Math.max(loopRoomIds.size(), reqGroup.size());
+                                
+                                for (int i = 0; i < maxIterations; i++) {
+                                    String rid = loopRoomIds.get(Math.min(i, loopRoomIds.size() - 1));
+                                    ClassSubjectTeacher mappedTeacher = reqGroup.get(Math.min(i, reqGroup.size() - 1));
+
+                                    ClassTimetable slot = new ClassTimetable();
+                                    slot.setTimetableId(timetableId);
+                                    slot.setClassId(mappedTeacher.getClassId());
+                                    slot.setDayId(day.getId());
+                                    slot.setBlockId(block.getId());
+                                    slot.setClassSubjectTeacherId(mappedTeacher.getId());
+                                    slot.setRoomId(rid);
+                                    slot.setIsLocked(false);
+                                    classTimetableRepository.save(slot);
+
+                                    TeacherSchedule ts = new TeacherSchedule();
+                                    ts.setTimetableId(timetableId);
+                                    ts.setTeacherId(mappedTeacher.getTeacherId());
+                                    ts.setDayId(day.getId());
+                                    ts.setBlockId(block.getId());
+                                    ts.setClassId(mappedTeacher.getClassId());
+                                    ts.setSubjectId(mappedTeacher.getSubjectId());
+                                    ts.setRoomId(rid);
+                                    teacherScheduleRepository.save(ts);
+
+                                    if (rid != null) {
+                                        roomBusySet.add(key(timetableId, rid, day.getId(), block.getId()));
+                                    }
+                                    teacherBusySet.add(key(timetableId, mappedTeacher.getTeacherId(), day.getId(), block.getId()));
+                                }
+
+                                classBusySet.add(key(timetableId, primary.getClassId(), day.getId(), block.getId()));
+                                scheduled++;
+                            }
+                            placed = true;
+                            break;
+                        }
                     }
                     if (placed)
                         break;
                 }
 
                 if (!placed) {
-                    conflicts.add("Could not schedule: ClassId=" + req.getClassId()
-                            + " SubjectId=" + req.getSubjectId()
-                            + " TeacherId=" + req.getTeacherId()
-                            + " (no available slot found)");
+                    conflicts.add("Could not schedule: ClassId=" + primary.getClassId() +
+                            " SubjectId=" + primary.getSubjectId() +
+                            " TeacherId=" + primary.getTeacherId() +
+                            " (no available slot found)");
                 }
             }
 
-            boolean success = conflicts.isEmpty();
-            String message = success
-                    ? "Timetable generated successfully. " + scheduled + " slots scheduled."
-                    : "Timetable generated with " + conflicts.size() + " unresolved conflicts.";
-
-            return new GenerationResultDto(success, scheduled, slotRequirements.size(), conflicts, message);
+            String msg = conflicts.isEmpty() ? "Timetable generated successfully" : "Timetable generated with " + conflicts.size() + " unresolved conflicts.";
+            return new GenerationResultDto(conflicts.isEmpty(), totalExpectedSlots, scheduled, conflicts, msg);
+            
         } catch (Exception e) {
             e.printStackTrace();
-            return new GenerationResultDto(false, 0, 0,
-                    List.of(e.getMessage() != null ? e.getMessage() : "Unknown Error"), "Critical Generation Error");
+            return new GenerationResultDto(false, 0, 0, List.of(e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName()), "Generation failed due to system error: " + (e.getMessage() != null ? e.getMessage() : "Unknown"));
         }
     }
 
@@ -176,25 +326,58 @@ public class TimetableGeneratorEngine {
         return map;
     }
 
-    private String findRoom(String subjectId, String timetableId, String dayId, String blockId,
-            Set<String> roomBusySet) {
+    private List<String> findRoomsForWindow(String subjectId, String timetableId, String dayId, List<PeriodBlock> window, Set<String> roomBusySet) {
+        
+        // 1. Check if it's a Batch Rotation Lab Group requirement
+        Optional<SubjectLabGroupRequirement> labGroupReq = subjectLabGroupRequirementRepository.findBySubjectId(subjectId);
+        if (labGroupReq.isPresent()) {
+            List<LabGroupRoom> groupRooms = labGroupRoomRepository.findByLabGroupId(labGroupReq.get().getLabGroupId());
+            if (groupRooms.isEmpty()) return Collections.emptyList();
+            
+            // For a Lab Group, EVERY room in the group MUST be available simultaneously
+            boolean allRoomsAvailable = true;
+            List<String> roomIds = new ArrayList<>();
+            for (LabGroupRoom lgr : groupRooms) {
+                roomIds.add(lgr.getRoomId());
+                for (PeriodBlock block : window) {
+                    String roomKey = key(timetableId, lgr.getRoomId(), dayId, block.getId());
+                    if (roomBusySet.contains(roomKey)) {
+                        allRoomsAvailable = false;
+                        break;
+                    }
+                }
+                if (!allRoomsAvailable) break;
+            }
+            if (allRoomsAvailable) {
+                return roomIds;
+            }
+            return Collections.emptyList(); // If even one room in the group is busy, the whole group is unavailable
+        }
+
+        // 2. Check standard single Room Type requirement
         Optional<String> requiredType = roomRequirementRepository
                 .findBySubjectIdAndIsRequiredTrue(subjectId)
                 .map(r -> r.getRoomTypeId());
 
-        List<Room> candidates;
-        if (requiredType.isPresent()) {
-            candidates = roomRepository.findByRoomTypeIdAndIsActiveTrue(requiredType.get());
-        } else {
-            candidates = roomRepository.findByIsActiveTrueOrderByRoomNameAsc();
+        if (requiredType.isEmpty()) {
+            return Collections.emptyList();
         }
 
+        List<Room> candidates = roomRepository.findByRoomTypeIdAndIsActiveTrue(requiredType.get());
+
         for (Room room : candidates) {
-            String roomKey = key(timetableId, room.getId(), dayId, blockId);
-            if (!roomBusySet.contains(roomKey)) {
-                return room.getId();
+            boolean isRoomValid = true;
+            for (PeriodBlock block : window) {
+                String roomKey = key(timetableId, room.getId(), dayId, block.getId());
+                if (roomBusySet.contains(roomKey)) {
+                    isRoomValid = false;
+                    break;
+                }
+            }
+            if (isRoomValid) {
+                return Collections.singletonList(room.getId());
             }
         }
-        return null; // No room available (non-fatal)
+        return Collections.emptyList();
     }
 }

@@ -103,13 +103,13 @@ export default function SchoolsPage() {
                                         </tr>
                                     ) : (
                                         schools.map((school) => (
-                                            <tr key={school.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]/30 transition-colors">
+                                            <tr key={school.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))]/30 transition-colors cursor-pointer" onClick={() => window.location.href = `/schools/${school.id}`}>
                                                 <td className="p-4">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 rounded-xl bg-blue-50 text-[hsl(var(--primary))] flex items-center justify-center font-bold">
                                                             <Building2 className="w-5 h-5" />
                                                         </div>
-                                                        <span className="font-medium">{school.name}</span>
+                                                        <span className="font-medium text-[hsl(var(--primary))]">{school.name}</span>
                                                     </div>
                                                 </td>
                                                 <td className="p-4 font-mono text-xs text-[hsl(var(--muted-foreground))]">{school.id}</td>
@@ -119,7 +119,7 @@ export default function SchoolsPage() {
                                                         {school.active ? "Active" : "Inactive"}
                                                     </span>
                                                 </td>
-                                                <td className="p-4">
+                                                <td className="p-4" onClick={e => e.stopPropagation()}>
                                                     <button onClick={() => handleToggle(school.id)} className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors" title={school.active ? "Deactivate" : "Activate"}>
                                                         {school.active ? <ToggleRight className="w-6 h-6 text-emerald-600" /> : <ToggleLeft className="w-6 h-6" />}
                                                     </button>

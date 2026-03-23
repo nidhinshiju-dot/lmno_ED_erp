@@ -166,6 +166,18 @@ services:
     networks:
       - erp-uat-network
 
+  # ── Admin Portal Web ──────────────────────────────────────────────────────
+  admin-portal-uat:
+    build:
+      context: ../school-erp-web/admin-portal
+      dockerfile: Dockerfile
+    container_name: erp-uat-admin
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - erp-uat-network
+
 volumes:
   postgres_uat_data:
 

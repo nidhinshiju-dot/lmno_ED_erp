@@ -8,9 +8,7 @@ import lombok.*;
  * Written every time a ClassTimetable slot is created/updated.
  */
 @Entity
-@Table(name = "teacher_schedule", uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "timetable_id", "teacher_id", "day_id", "block_id" })
-}, indexes = {
+@Table(name = "teacher_schedule", indexes = {
         @Index(name = "idx_ts_teacher_id", columnList = "teacher_id"),
         @Index(name = "idx_ts_day_block", columnList = "day_id,block_id"),
         @Index(name = "idx_ts_timetable_id", columnList = "timetable_id")

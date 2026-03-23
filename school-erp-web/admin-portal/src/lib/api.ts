@@ -29,7 +29,20 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
     }
 
     if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        let errorMessage = `API request failed with status ${response.status}`;
+        try {
+            const errorBody = await response.json();
+            if (errorBody && errorBody.message) {
+                errorMessage = errorBody.message;
+            } else if (errorBody && errorBody.error) {
+                errorMessage = errorBody.error;
+            } else if (typeof errorBody === 'string') {
+                errorMessage = errorBody;
+            }
+        } catch {
+            // Unparseable body, fallback to default
+        }
+        throw new Error(errorMessage);
     }
 
     // 204 No Content (DELETE) — no body to parse
@@ -50,8 +63,12 @@ export const StudentService = {
 
 export const StaffService = {
     getAll: () => fetchWithAuth("/staff"),
+    getById: (id: string) => fetchWithAuth(`/staff/${id}`),
     create: (staffData: Record<string, unknown>) => fetchWithAuth("/staff", { method: "POST", body: JSON.stringify(staffData) }),
+    update: (id: string, staffData: Record<string, unknown>) => fetchWithAuth(`/staff/${id}`, { method: "PUT", body: JSON.stringify(staffData) }),
+    delete: (id: string) => fetchWithAuth(`/staff/${id}`, { method: "DELETE" }),
 };
+
 
 export const ClassService = {
     getAll: () => fetchWithAuth("/classes"),
@@ -73,14 +90,100 @@ export const CourseService = {
 
 export const AuthService = {
     login: async (credentials: Record<string, unknown>) => {
+        console.log("Attempting login to:", `${API_BASE_URL}/auth/login`);
+        console.log("Credentials payload:", credentials);
         const res = await fetch(`${API_BASE_URL}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(credentials)
         });
-        if (!res.ok) throw new Error("Invalid credentials");
-        return res.json();
+        console.log("Login API Response Status:", res.status);
+        if (!res.ok) {
+            const errText = await res.text();
+            console.error("Login API Error Body:", errText);
+            throw new Error(`Login failed: ${res.status} ${errText}`);
+        }
+        const data = await res.json();
+        console.log("Login API Success Data:", data);
+        return data;
     }
+};
+
+export const CredentialsResetService = {
+    // Generate a reset token (calls auth-service via API Gateway)
+    generateResetLink: async (username: string): Promise<string> => {
+        const res = await fetch(`${API_BASE_URL}/auth/generate-reset-token`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: username })
+        });
+        if (!res.ok) throw new Error("Failed to generate reset token. Make sure the auth service is running.");
+        const data = await res.json();
+        const frontendBase = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+        return `${frontendBase}/reset-password?token=${data.token}`;
+    },
+    // Send reset link via WhatsApp for a specific user by their entity ID + type
+    sendResetLink: (type: string, id: string) =>
+        fetchWithAuth("/credentials/send-bulk", {
+            method: "POST",
+            body: JSON.stringify({ type, ids: [id] })
+        }),
+};
+
+
+// ==========================================
+// Attendance API Module
+// ==========================================
+export interface AttendanceStatusType {
+    id: string;
+    code: string;
+    label: string;
+    isSystemDefault: boolean;
+    color: string;
+}
+
+export interface AttendanceStudentResponseDto {
+    studentId: string;
+    admissionNumber: string;
+    name: string;
+    attendanceId?: string;
+    statusId?: string;
+    remarks?: string;
+}
+
+export interface AttendanceRecordDto {
+    studentId: string;
+    statusId: string;
+    remarks?: string;
+}
+
+export interface AttendanceBatchRequestDto {
+    classId: string;
+    date: string; // YYYY-MM-DD
+    periodBlockId?: string;
+    recordedBy: string;
+    recordedRole: string; // "TEACHER" or "ADMIN"
+    records: AttendanceRecordDto[];
+}
+
+export const AttendanceService = {
+    getMode: async (): Promise<string> => {
+        const token = localStorage.getItem("erp_token");
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"}/attendance/mode`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error("Failed to fetch mode");
+        return res.text();
+    },
+    getStatuses: async (): Promise<AttendanceStatusType[]> => fetchWithAuth('/attendance/statuses'),
+    getClassRoster: async (classId: string, date: string, periodBlockId?: string): Promise<AttendanceStudentResponseDto[]> => {
+        const url = periodBlockId 
+            ? `/attendance/roster?classId=${classId}&date=${date}&periodBlockId=${periodBlockId}`
+            : `/attendance/roster?classId=${classId}&date=${date}`;
+        return fetchWithAuth(url);
+    },
+    submitBatch: async (data: AttendanceBatchRequestDto): Promise<string> => 
+        fetchWithAuth('/attendance/batch', { method: 'POST', body: JSON.stringify(data) })
 };
 
 export const FeeService = {
@@ -132,6 +235,12 @@ export const RoomService = {
     getRequirements: () => fetchWithAuth("/rooms/requirements"),
     createRequirement: (data: Record<string, unknown>) => fetchWithAuth("/rooms/requirements", { method: "POST", body: JSON.stringify(data) }),
     deleteRequirement: (id: string) => fetchWithAuth(`/rooms/requirements/${id}`, { method: "DELETE" }),
+    getLabGroups: () => fetchWithAuth("/rooms/lab-groups"),
+    createLabGroup: (data: Record<string, unknown>) => fetchWithAuth("/rooms/lab-groups", { method: "POST", body: JSON.stringify(data) }),
+    deleteLabGroup: (id: string) => fetchWithAuth(`/rooms/lab-groups/${id}`, { method: "DELETE" }),
+    getLabGroupRequirements: () => fetchWithAuth("/rooms/lab-group-requirements"),
+    createLabGroupRequirement: (data: Record<string, unknown>) => fetchWithAuth("/rooms/lab-group-requirements", { method: "POST", body: JSON.stringify(data) }),
+    deleteLabGroupRequirement: (id: string) => fetchWithAuth(`/rooms/lab-group-requirements/${id}`, { method: "DELETE" }),
 };
 
 export const TimetableService = {
@@ -139,7 +248,10 @@ export const TimetableService = {
     create: (data: Record<string, unknown>) => fetchWithAuth("/timetable", { method: "POST", body: JSON.stringify(data) }),
     publish: (id: string) => fetchWithAuth(`/timetable/${id}/publish`, { method: "POST" }),
     delete: (id: string) => fetchWithAuth(`/timetable/${id}`, { method: "DELETE" }),
-    generate: (id: string) => fetchWithAuth(`/timetable/${id}/generate`, { method: "POST" }),
+    generate: (id: string, isClassTeacherFirstPeriod?: boolean) => {
+        const url = `/timetable/${id}/generate${isClassTeacherFirstPeriod ? '?isClassTeacherFirstPeriod=true' : ''}`;
+        return fetchWithAuth(url, { method: "POST" });
+    },
     getAllSlots: (timetableId: string) => fetchWithAuth(`/timetable/${timetableId}/slots`),
     getByClass: (timetableId: string, classId: string) => fetchWithAuth(`/timetable/${timetableId}/class/${classId}`),
     getByTeacher: (timetableId: string, teacherId: string) => fetchWithAuth(`/timetable/${timetableId}/teacher/${teacherId}`),
@@ -172,7 +284,10 @@ export const TeacherService = {
 };
 
 export const ParentService = {
+    getAll: () => fetchWithAuth("/parents"),
+    getById: (id: string) => fetchWithAuth(`/parents/${id}`),
     getChildren: (parentId: string) => fetchWithAuth(`/students/parent/${parentId}`),
+    getStudents: (id: string) => fetchWithAuth(`/parents/${id}/students`),
 };
 
 export const SubjectService = {
@@ -183,20 +298,31 @@ export const SubjectService = {
     delete: (id: string) => fetchWithAuth(`/subjects/${id}`, { method: "DELETE" }),
 };
 
-export const AttendanceService = {
-    getByClass: (classId: string, date: string) => fetchWithAuth(`/attendance/class/${classId}?date=${date}`),
-    getByStudent: (studentId: string) => fetchWithAuth(`/attendance/student/${studentId}`),
-    markAttendance: (records: Record<string, unknown>[]) => fetchWithAuth("/attendance", { method: "POST", body: JSON.stringify(records) }),
-};
+
 
 export const ExamService = {
     getAll: () => fetchWithAuth("/exams"),
     getByClass: (classId: string) => fetchWithAuth(`/exams/class/${classId}`),
     create: (data: Record<string, unknown>) => fetchWithAuth("/exams", { method: "POST", body: JSON.stringify(data) }),
+    getById: (id: string) => fetchWithAuth(`/exams/${id}`),
+    getByTeacher: (teacherId: string) => fetchWithAuth(`/exams/teacher/${teacherId}`),
+    delete: (id: string) => fetchWithAuth(`/exams/${id}`, { method: "DELETE" }),
+    getStudentResults: (studentId: string) => fetchWithAuth(`/exams/results/student/${studentId}`),
+    
+    // Legacy mapping (to avoid breaking admin stub code)
     getResults: (examId: string) => fetchWithAuth(`/exams/${examId}/results`),
     saveResults: (examId: string, results: Record<string, unknown>[]) => fetchWithAuth(`/exams/${examId}/results`, { method: "POST", body: JSON.stringify(results) }),
     publishResults: (examId: string) => fetchWithAuth(`/exams/${examId}/publish`, { method: "POST" }),
     getSchedules: (examId: string) => fetchWithAuth(`/exams/${examId}/schedules`),
+
+    // Timetables
+    schedule: (data: Record<string, unknown>) => fetchWithAuth("/exams/timetable", { method: "POST", body: JSON.stringify(data) }),
+    getTimetableByClass: (classId: string) => fetchWithAuth(`/exams/timetable/class/${classId}`),
+    deleteTimetable: (id: string) => fetchWithAuth(`/exams/timetable/${id}`, { method: "DELETE" }),
+    
+    // Marks
+    recordMark: (data: Record<string, unknown>) => fetchWithAuth("/exams/marks", { method: "POST", body: JSON.stringify(data) }),
+    getMarksByExam: (examId: string) => fetchWithAuth(`/exams/${examId}/marks`),
 };
 
 export const ExamTemplateService = {
@@ -277,4 +403,39 @@ export const SchoolConfigService = {
             headers: { "X-Tenant-ID": tenantId }
         });
     },
+};
+
+export const TeacherAssignmentService = {
+    getMyAssignments: (userId: string) => fetchWithAuth(`/teacher/${userId}/assignments`),
+};
+
+export const LessonPlanService = {
+    create: (data: Record<string, unknown>) => fetchWithAuth(`/lesson-plans`, { method: "POST", body: JSON.stringify(data) }),
+    getByTeacher: (teacherId: string) => fetchWithAuth(`/lesson-plans/teacher/${teacherId}`),
+    getByAssignment: (assignmentId: string) => fetchWithAuth(`/lesson-plans/assignment/${assignmentId}`),
+    getByGrade: (grade: number) => fetchWithAuth(`/lesson-plans/grade/${grade}`),
+    getPending: () => fetchWithAuth(`/lesson-plans/pending`),
+    updateStatus: (id: string, status: string) => fetchWithAuth(`/lesson-plans/${id}/status?status=${status}`, { method: "PUT" }),
+    delete: (id: string) => fetchWithAuth(`/lesson-plans/${id}`, { method: "DELETE" }),
+};
+
+export const SyllabusService = {
+    create: (data: Record<string, unknown>) => fetchWithAuth(`/syllabi`, { method: "POST", body: JSON.stringify(data) }),
+    getByTeacher: (teacherId: string) => fetchWithAuth(`/syllabi/teacher/${teacherId}`),
+    getByAssignment: (assignmentId: string) => fetchWithAuth(`/syllabi/assignment/${assignmentId}`),
+    getByGrade: (grade: number) => fetchWithAuth(`/syllabi/grade/${grade}`),
+    getPending: () => fetchWithAuth(`/syllabi/pending`),
+    updateStatus: (id: string, status: string) => fetchWithAuth(`/syllabi/${id}/status?status=${status}`, { method: "PUT" }),
+    delete: (id: string) => fetchWithAuth(`/syllabi/${id}`, { method: "DELETE" }),
+};
+
+export const QuestionPaperService = {
+    getAll: () => fetchWithAuth("/question-papers"),
+    save: (data: Record<string, unknown>) => fetchWithAuth("/question-papers", { method: "POST", body: JSON.stringify(data) }),
+    getById: (id: string) => fetchWithAuth(`/question-papers/${id}`),
+    getByExam: (examId: string) => fetchWithAuth(`/question-papers/exam/${examId}`),
+    getByTeacher: (teacherId: string) => fetchWithAuth(`/question-papers/teacher/${teacherId}`),
+    getPending: () => fetchWithAuth("/question-papers/pending"),
+    updateStatus: (id: string, status: string, templateId?: number) => fetchWithAuth(`/question-papers/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, templateId }) }),
+    delete: (id: string) => fetchWithAuth(`/question-papers/${id}`, { method: "DELETE" }),
 };

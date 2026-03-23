@@ -15,6 +15,20 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private javax.sql.DataSource dataSource;
+
+    @GetMapping("/health")
+    public ResponseEntity<?> healthCheck() {
+        try (java.sql.Connection conn = dataSource.getConnection();
+             java.sql.Statement stmt = conn.createStatement()) {
+            stmt.executeQuery("SELECT 1");
+            return ResponseEntity.ok(java.util.Map.of("status", "UP", "database", "CONNECTED"));
+        } catch (Exception e) {
+            return ResponseEntity.status(503).body(java.util.Map.of("status", "DOWN", "error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody User user) {
         try {
@@ -69,6 +83,26 @@ public class AuthController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PostMapping("/generate-reset-token")
+    public ResponseEntity<?> generateResetToken(@RequestBody GenerateResetTokenRequest request) {
+        try {
+            String token = authService.generateResetToken(request.getEmail());
+            return ResponseEntity.ok(java.util.Map.of("token", token));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/reset-password-by-token")
+    public ResponseEntity<?> resetPasswordByToken(@RequestBody ResetByTokenRequest request) {
+        try {
+            authService.resetPasswordByToken(request.getToken(), request.getNewPassword());
+            return ResponseEntity.ok("Password updated successfully.");
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
+    }
 }
 
 @Data
@@ -97,11 +131,17 @@ class LoginRequest {
 }
 
 @Data
+class GenerateResetTokenRequest {
+    private String email;
+}
+
+@Data
+class ResetByTokenRequest {
+    private String token;
+    private String newPassword;
+}
+
+@Data
 class JwtResponse {
     private final String token;
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        return ResponseEntity.noContent().build();
-    }
 }

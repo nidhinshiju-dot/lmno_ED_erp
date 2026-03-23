@@ -8,6 +8,7 @@ interface User {
     email: string;
     name: string;
     tenantId: string;
+    role: string;
 }
 
 interface AuthContextType {
@@ -30,11 +31,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Check local storage for existing session
         const storedToken = localStorage.getItem("erp_token");
         const storedUser = localStorage.getItem("erp_user");
+        const isPublicRoute = pathname === "/login" || pathname === "/";
 
         if (storedToken && storedUser) {
             setToken(storedToken);
             setUser(JSON.parse(storedUser));
-        } else if (pathname !== "/login") {
+        } else if (!isPublicRoute) {
             router.push("/login");
         }
     }, [pathname, router]);
@@ -44,7 +46,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("erp_user", JSON.stringify(newUser));
         setToken(newToken);
         setUser(newUser);
-        router.push("/"); // Redirect to dashboard
+
+        if (newUser.role === "TEACHER") {
+            router.push("/teacher");
+        } else if (newUser.role === "STUDENT") {
+            router.push("/student");
+        } else if (newUser.role === "PARENT") {
+            router.push("/parent");
+        } else {
+            router.push("/dashboard");
+        }
     };
 
     const logout = () => {
@@ -57,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
-            {token || pathname === "/login" ? children : null}
+            {token || pathname === "/login" || pathname === "/" ? children : null}
         </AuthContext.Provider>
     );
 }

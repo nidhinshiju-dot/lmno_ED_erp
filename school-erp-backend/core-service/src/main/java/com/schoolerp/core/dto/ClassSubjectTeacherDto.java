@@ -17,4 +17,7 @@ public class ClassSubjectTeacherDto {
     private String teacherName;
     private Integer periodsPerWeek;
     private Integer priority;
+    private Boolean isLab;
+    private Integer consecutiveBlocks;
+    private String role;
 }

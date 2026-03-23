@@ -9,5 +9,4 @@ import java.util.List;
 @Repository
 public interface LessonRepository extends JpaRepository<Lesson, String> {
     List<Lesson> findByCourseIdOrderByOrderIndexAsc(String courseId);
-    List<Lesson> findByModuleIdOrderByOrderIndexAsc(String moduleId);
 }

@@ -18,14 +18,31 @@ export default function LoginPage() {
         setError(null);
         try {
             const response = await AuthService.login({ email, password });
+            
+            let userRole = "ADMIN";
+            let userId = "user-1";
+            try {
+                const base64Url = response.token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                const payload = JSON.parse(jsonPayload);
+                if (payload.role) userRole = payload.role;
+                if (payload.sub) userId = payload.sub; 
+            } catch (e) {
+                console.error("Failed to parse JWT payload", e);
+            }
+
             login(response.token, {
-                id: "user-1",
+                id: userId,
                 email: email,
-                name: "System Admin",
-                tenantId: "TENANT_001"
+                name: "Lmno User",
+                tenantId: "TENANT_001",
+                role: userRole
             });
-        } catch {
-            setError("Invalid email or password. Please try again.");
+        } catch (err: any) {
+            setError(err.message || "Invalid email or password. Please try again.");
         } finally {
             setIsLoading(false);
         }

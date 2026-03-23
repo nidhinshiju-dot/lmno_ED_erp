@@ -48,8 +48,10 @@ public class TimetableController {
     // ── Auto Generation ───────────────────────────────────────────────────────
 
     @PostMapping("/{id}/generate")
-    public GenerationResultDto generate(@PathVariable("id") String id) {
-        return generatorEngine.generate(id);
+    public GenerationResultDto generate(
+            @PathVariable("id") String id,
+            @RequestParam(name = "isClassTeacherFirstPeriod", defaultValue = "false", required = false) boolean isClassTeacherFirstPeriod) {
+        return generatorEngine.generate(id, isClassTeacherFirstPeriod);
     }
 
     // ── Slot Queries ──────────────────────────────────────────────────────────

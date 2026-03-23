@@ -56,6 +56,9 @@ public class Student {
     @Column(name = "photo_url")
     private String photoUrl;
 
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
+
     @PrePersist
     void prePersist() {
         if (status == null)

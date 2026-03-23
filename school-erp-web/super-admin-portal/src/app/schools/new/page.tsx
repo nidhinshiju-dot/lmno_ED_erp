@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, ArrowLeft, Mail, Phone, MapPin, Globe, Loader2, CheckCircle2, ShieldAlert } from "lucide-react";
+import { Building2, ArrowLeft, Mail, Phone, MapPin, Globe, Loader2, CheckCircle2, ShieldAlert, Copy, Check } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -10,6 +10,8 @@ export default function OnboardSchoolPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [tempPassword, setTempPassword] = useState("");
+  const [copied, setCopied] = useState(false);
   
   const [formData, setFormData] = useState({
     id: "", // tenant_id
@@ -44,7 +46,7 @@ export default function OnboardSchoolPage() {
     
     try {
       // Pointing to the UAT API Gateway
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8090/api/v1";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
       const response = await fetch(`${API_URL}/schools`, {
         method: "POST",
         headers: {
@@ -57,6 +59,8 @@ export default function OnboardSchoolPage() {
         throw new Error("Failed to onboard school. Please check if the Tenant ID is unique.");
       }
 
+      const data = await response.json();
+      setTempPassword(data.tempPassword || "");
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred.");
@@ -85,7 +89,17 @@ export default function OnboardSchoolPage() {
                           <p><span className="text-muted-foreground">Login URL:</span> http://localhost:3000</p>
                           <p><span className="text-muted-foreground">Tenant ID:</span> {formData.id}</p>
                           <p><span className="text-muted-foreground">Email:</span> {formData.contactEmail}</p>
-                          <p><span className="text-muted-foreground">Password:</span> <span className="text-emerald-600 font-bold">Check Backend Console Logs</span></p>
+                          <div className="flex items-center gap-2">
+                              <p><span className="text-muted-foreground">Password:</span> <span className="text-emerald-600 font-bold">{tempPassword}</span></p>
+                              <button
+                                  onClick={() => { navigator.clipboard.writeText(tempPassword); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                                  className="p-1 hover:bg-muted rounded transition-colors"
+                                  title="Copy password"
+                              >
+                                  {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-muted-foreground" />}
+                              </button>
+                          </div>
+                          <p className="text-xs text-amber-600 mt-2">⚠ Ask the admin to change this password after first login.</p>
                       </div>
                   </div>
 

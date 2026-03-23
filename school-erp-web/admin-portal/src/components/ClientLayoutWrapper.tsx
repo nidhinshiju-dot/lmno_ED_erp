@@ -6,10 +6,10 @@ import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 
 const getPageTitle = (pathname: string) => {
-    if (pathname === "/") return "Dashboard";
+    if (pathname === "/dashboard") return "Dashboard";
     if (pathname.startsWith("/students")) return "Student Management";
     if (pathname.startsWith("/classes")) return "Class Management";
-    if (pathname.startsWith("/courses")) return "Courses & LMS";
+    if (pathname.startsWith("/academics")) return "Academics & Reports";
     if (pathname.startsWith("/subjects")) return "Subject Management";
     if (pathname.startsWith("/attendance")) return "Attendance";
     if (pathname.startsWith("/exams")) return "Examination Management";
@@ -33,11 +33,18 @@ const getPageTitle = (pathname: string) => {
 
 export default function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
-    const isLoginPage = pathname === "/login";
+    const isPublicPage = pathname === "/" || pathname === "/login" || pathname.startsWith("/reset-password");
+    const isTeacherPage = pathname.startsWith("/teacher");
+    const isStudentPage = pathname.startsWith("/student");
+    const isParentPage = pathname.startsWith("/parent");
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-    if (isLoginPage) {
-        return <main className="min-h-screen bg-[#F8FAFC]">{children}</main>;
+    if (isPublicPage) {
+        return <>{children}</>;
+    }
+
+    if (isTeacherPage || isStudentPage || isParentPage) {
+        return <>{children}</>;
     }
 
     return (

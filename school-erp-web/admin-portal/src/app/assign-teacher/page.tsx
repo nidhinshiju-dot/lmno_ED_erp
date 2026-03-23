@@ -6,7 +6,7 @@ import { StaffService, ClassService } from "@/lib/api";
 import { Users, BookOpen, Save } from "lucide-react";
 
 interface StaffMember { id: string; name: string; department: string; designation: string; }
-interface SchoolClass { id: string; name: string; gradeLevel: number; classTeacherId?: string | null; }
+interface SchoolClass { id: string; name: string; gradeLevel: number; branch?: string; roomNumber?: string; classTeacherId?: string | null; }
 
 export default function TeacherAssignmentPage() {
     const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -56,6 +56,23 @@ export default function TeacherAssignmentPage() {
         }
     };
 
+    const sortedClasses = [...classes].sort((a, b) => {
+        // 1. Assigned teachers come first
+        const aAssigned = a.classTeacherId ? 1 : 0;
+        const bAssigned = b.classTeacherId ? 1 : 0;
+        if (aAssigned !== bAssigned) {
+            return bAssigned - aAssigned;
+        }
+
+        // 2. Sort by Grade Level
+        if (a.gradeLevel !== b.gradeLevel) return (a.gradeLevel || 0) - (b.gradeLevel || 0);
+        
+        // 3. Sort alphabetically by Name
+        const nameA = a.name || "";
+        const nameB = b.name || "";
+        return nameA.localeCompare(nameB, undefined, { numeric: true });
+    });
+
     return (
         <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background">
 
@@ -96,7 +113,9 @@ export default function TeacherAssignmentPage() {
                                 >
                                     <option value="">Choose a class...</option>
                                     {classes.map(c => (
-                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                        <option key={c.id} value={c.id}>
+                                            {c.name} {c.branch ? `(${c.branch})` : ''} {c.roomNumber ? `- Div ${c.roomNumber}` : ''}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
@@ -136,11 +155,13 @@ export default function TeacherAssignmentPage() {
                                 ) : classes.length === 0 ? (
                                     <tr><td colSpan={3} className="p-8 text-center text-muted-foreground">No classes found.</td></tr>
                                 ) : (
-                                    classes.map(cls => {
+                                    sortedClasses.map(cls => {
                                         const teacher = staff.find(t => t.id === cls.classTeacherId);
                                         return (
                                         <tr key={cls.id} className="border-b border-border hover:bg-muted/30 transition-colors">
-                                            <td className="p-4 font-medium">{cls.name}</td>
+                                            <td className="p-4 font-medium">
+                                                {cls.name} {cls.branch ? `(${cls.branch})` : ''} {cls.roomNumber ? `- Div ${cls.roomNumber}` : ''}
+                                            </td>
                                             <td className="p-4">
                                                 {teacher ? (
                                                     <span className="text-sm bg-blue-50 text-blue-700 px-3 py-1 rounded-full">{teacher.name}</span>

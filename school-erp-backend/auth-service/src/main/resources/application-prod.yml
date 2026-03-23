@@ -1,16 +1,22 @@
-# Auth Service — Production Profile
+# Auth Service — Production Profile (Google Cloud Run Ready)
 server:
-  port: 8081
+  port: ${PORT:8080}
+
 spring:
   application:
     name: auth-service
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    # Google Cloud SQL TCP/Socket connection setup
+    url: jdbc:postgresql:///${DB_NAME}?cloudSqlInstance=${CLOUD_SQL_INSTANCE}&socketFactory=com.google.cloud.sql.postgres.SocketFactory
+    username: ${DB_USER}       # Injected via Cloud Run Secret Manager
+    password: ${DB_PASSWORD}   # Injected via Cloud Run Secret Manager
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
+      # Critical for Cloud Run: Prevents service start failure if DB is initially unavailable
+      initialization-fail-timeout: -1 
+      connection-timeout: 20000
+      max-lifetime: 1800000 
   jpa:
     hibernate:
       ddl-auto: validate
@@ -22,5 +28,6 @@ jwt:
 
 logging:
   level:
+    root: INFO
     com.schoolerp: INFO
-    org.springframework: WARN
+    org.springframework.web: WARN

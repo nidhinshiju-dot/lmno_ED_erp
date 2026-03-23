@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, GraduationCap, Calendar, BookOpen, Settings, IndianRupee, ClipboardCheck, BookMarked, CheckSquare, FileText, Megaphone, BarChart3, FolderOpen, Building2, Receipt, ChevronRight, Layers, Bell, Clock, UserCheck, DoorOpen } from "lucide-react";
+import { LayoutDashboard, Users, GraduationCap, Calendar, BookOpen, Settings, IndianRupee, ClipboardCheck, BookMarked, CheckSquare, FileText, Megaphone, BarChart3, FolderOpen, Building2, Receipt, ChevronRight, Layers, Bell, Clock, UserCheck, DoorOpen, KeyRound, MessageSquare } from "lucide-react";
 
 const menuGroups = [
     {
@@ -16,10 +16,10 @@ const menuGroups = [
         items: [
             { icon: GraduationCap, label: "Students", href: "/students" },
             { icon: Layers, label: "Classes", href: "/classes" },
-            { icon: BookOpen, label: "Courses & LMS", href: "/courses" },
+            { icon: BookOpen, label: "Academics & Reports", href: "/academics" },
             { icon: BookMarked, label: "Subjects", href: "/subjects" },
             { icon: CheckSquare, label: "Attendance", href: "/attendance" },
-            { icon: FileText, label: "Examinations", href: "/exams" },
+            { icon: FileText, label: "Examinations", href: "/examinations" },
             {
                 icon: Calendar, label: "Timetable", href: "/timetable", subItems: [
                     { icon: Clock, label: "Schedule Config", href: "/timetable/schedule-config" },
@@ -32,6 +32,7 @@ const menuGroups = [
     {
         label: "Administration",
         items: [
+            { icon: KeyRound, label: "Credentials Hub", href: "/credentials" },
             { icon: Users, label: "Staff Directory", href: "/staff" },
             { icon: ClipboardCheck, label: "Teacher Assignment", href: "/assign-teacher" },
             { icon: Building2, label: "Campuses", href: "/campuses" },
@@ -150,17 +151,35 @@ export default function Sidebar({ isOpen = true }: { isOpen?: boolean }) {
 
             {/* Bottom: Settings & Copyright */}
             <div className="border-t border-[#E2E8F0] flex-shrink-0 p-3 space-y-2">
-                <Link
-                    href="/settings"
-                    className={`flex items-center gap-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${isActive("/settings")
-                            ? "bg-[#EFF6FF] text-[#2563EB] font-medium"
-                            : "text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
-                        } ${!isOpen ? 'justify-center px-0' : 'px-3'}`}
-                    title={!isOpen ? "Settings" : undefined}
-                >
-                    <Settings className="w-5 h-5" />
-                    {isOpen && <span>Settings</span>}
-                </Link>
+                <div>
+                    <Link
+                        href="/settings"
+                        className={`flex items-center gap-3 py-2.5 rounded-lg text-sm transition-all duration-150 ${isActive("/settings")
+                                ? "bg-[#EFF6FF] text-[#2563EB] font-medium"
+                                : "text-[#475569] hover:bg-[#F8FAFC] hover:text-[#0F172A]"
+                            } ${!isOpen ? 'justify-center px-0' : 'px-3'}`}
+                        title={!isOpen ? "Settings" : undefined}
+                    >
+                        <Settings className="w-5 h-5 flex-shrink-0" />
+                        {isOpen && <span className="flex-1 truncate">Settings</span>}
+                    </Link>
+                    {isOpen && isActive("/settings") && (
+                        <ul className="ml-8 mt-1 space-y-0.5 border-l-2 border-[#EFF6FF] pl-2">
+                            <li>
+                                <Link
+                                    href="/settings/integrations"
+                                    className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all duration-150 ${pathname.startsWith("/settings/integrations")
+                                            ? "bg-[#DBEAFE] text-[#1D4ED8] font-medium"
+                                            : "text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]"
+                                        }`}
+                                >
+                                    <MessageSquare className={`w-3.5 h-3.5 flex-shrink-0 ${pathname.startsWith("/settings/integrations") ? "text-[#1D4ED8]" : "text-[#94A3B8]"}`} />
+                                    <span className="truncate">Integrations</span>
+                                </Link>
+                            </li>
+                        </ul>
+                    )}
+                </div>
                 {isOpen && (
                     <div className="text-center pt-2">
                         <p className="text-[10px] text-[#94A3B8] font-medium">© 2026 Lmno Corp.</p>

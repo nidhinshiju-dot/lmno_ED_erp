@@ -5,6 +5,13 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
         "Content-Type": "application/json",
     };
 
+    if (typeof window !== "undefined") {
+        const token = localStorage.getItem("sa_erp_token");
+        if (token) {
+            defaultHeaders["Authorization"] = `Bearer ${token}`;
+        }
+    }
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
         headers: {

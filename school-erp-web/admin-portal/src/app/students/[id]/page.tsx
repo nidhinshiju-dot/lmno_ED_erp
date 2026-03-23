@@ -2,9 +2,10 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
-import { StudentService, FileService, fetchWithAuth, StudentManagementService } from "@/lib/api";
-import { ArrowLeft, User, Phone, Calendar, MapPin, Loader2, Save, Image as ImageIcon, BookOpen, Upload, Power } from "lucide-react";
+import { StudentService, FileService, fetchWithAuth, StudentManagementService, CredentialsResetService } from "@/lib/api";
+import { ArrowLeft, User, Phone, Calendar, MapPin, Loader2, Save, Image as ImageIcon, BookOpen, Upload, Power, KeyRound, Copy, Check, MessageSquare, AlertCircle } from "lucide-react";
 import Link from "next/link";
+
 
 interface StudentProps {
     id: string;
@@ -133,6 +134,71 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
         );
     }
 
+// Student Password Reset Card
+function StudentResetCard({ studentId, username }: { studentId: string; username: string | null }) {
+    const [resetLink, setResetLink] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [sent, setSent] = useState(false);
+
+    const handleGenerate = async () => {
+        if (!username) { setError("No username linked to this account."); return; }
+        setLoading(true); setError(null);
+        try {
+            const link = await CredentialsResetService.generateResetLink(username);
+            setResetLink(link);
+        } catch (e: any) { setError(e.message); } finally { setLoading(false); }
+    };
+    const handleSend = async () => {
+        setSending(true); setError(null);
+        try {
+            await CredentialsResetService.sendResetLink("students", studentId);
+            setSent(true); setTimeout(() => setSent(false), 3000);
+        } catch (e: any) { setError(e.message); } finally { setSending(false); }
+    };
+    const handleCopy = () => {
+        if (!resetLink) return;
+        navigator.clipboard.writeText(resetLink);
+        setCopied(true); setTimeout(() => setCopied(false), 2000);
+    };
+
+    return (
+        <div className="bg-card border border-border rounded-xl shadow-sm p-5">
+            <h3 className="text-sm font-bold mb-3 flex items-center gap-2"><KeyRound className="w-4 h-4 text-amber-500" /> Password Reset</h3>
+            <div className="mb-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Username</p>
+                <div className="font-mono text-xs text-foreground bg-muted border border-border px-3 py-2 rounded-lg">
+                    {username || <span className="italic text-muted-foreground">No username linked</span>}
+                </div>
+            </div>
+            {error && <div className="mb-3 flex items-start gap-2 text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5 text-xs"><AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />{error}</div>}
+            {resetLink && (
+                <div className="mb-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Reset Link</p>
+                    <div className="flex items-center gap-2">
+                        <div className="flex-1 font-mono text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1.5 rounded-lg truncate">{resetLink}</div>
+                        <button onClick={handleCopy} className={`flex-shrink-0 p-1.5 rounded-lg border transition-all ${copied ? "bg-emerald-100 border-emerald-300 text-emerald-700" : "border-border hover:bg-muted"}`}>
+                            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                    </div>
+                </div>
+            )}
+            <div className="flex flex-col gap-2">
+                <button onClick={handleGenerate} disabled={loading || !username} className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-lg font-semibold text-xs transition-all">
+                    {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+                    {resetLink ? "Regenerate Link" : "Generate Reset Link"}
+                </button>
+                <button onClick={handleSend} disabled={sending || !username} className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#25D366] hover:bg-[#1DA851] disabled:opacity-50 text-white rounded-lg font-semibold text-xs transition-all">
+                    {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : sent ? <Check className="w-3.5 h-3.5" /> : <MessageSquare className="w-3.5 h-3.5" />}
+                    {sent ? "Sent!" : "Send via WhatsApp"}
+                </button>
+            </div>
+        </div>
+    );
+}
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             {/* Header Navigation */}
@@ -151,8 +217,9 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Column 1: Profile Overview Card */}
-                <div className="lg:col-span-1 space-y-6">
+                <div className="lg:col-span-1 space-y-4">
                     <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+
                         <div className="h-24 bg-gradient-to-r from-blue-500 to-indigo-600 relative">
                             <button 
                                 onClick={handleToggleStatus} 
@@ -200,6 +267,12 @@ export default function StudentProfilePage({ params }: { params: Promise<{ id: s
                             </div>
                         </div>
                     </div>
+
+                    {/* Password Reset Card */}
+                    <StudentResetCard
+                        studentId={student.id}
+                        username={student.parentContact || null}
+                    />
                 </div>
 
                 {/* Column 2 & 3: Editing and Metrics */}

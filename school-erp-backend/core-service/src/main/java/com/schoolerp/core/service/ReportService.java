@@ -18,7 +18,7 @@ public class ReportService {
     private final ExamResultRepository examResultRepository;
 
     public Map<String, Object> getAttendanceReport(String classId, LocalDate from, LocalDate to) {
-        var students = studentRepository.findByClassId(classId);
+        var students = studentRepository.findByClassIdAndIsActiveTrue(classId);
         int totalStudents = students.size();
 
         long totalPresent = 0, totalAbsent = 0, totalLate = 0;

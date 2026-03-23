@@ -9,9 +9,7 @@ import lombok.*;
  * Unique constraint: one class can only have one subject per day+block.
  */
 @Entity
-@Table(name = "class_timetable", uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "timetable_id", "class_id", "day_id", "block_id" })
-}, indexes = {
+@Table(name = "class_timetable", indexes = {
         @Index(name = "idx_ct_timetable_id", columnList = "timetable_id"),
         @Index(name = "idx_ct_class_id", columnList = "class_id"),
         @Index(name = "idx_ct_day_id", columnList = "day_id"),

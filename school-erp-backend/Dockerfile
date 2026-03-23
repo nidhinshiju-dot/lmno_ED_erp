@@ -28,7 +28,7 @@ RUN mvn clean package -DskipTests -pl ${SERVICE} -am
 RUN echo "== Built jars in ${SERVICE}/target ==" && ls -lh /app/${SERVICE}/target/*.jar 2>/dev/null || true
 
 # ── Stage 2: Runtime ────────────────────────────────────────────────────────
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre-jammy
 
 ARG SERVICE
 WORKDIR /app

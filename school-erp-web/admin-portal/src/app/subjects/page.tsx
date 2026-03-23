@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import { SubjectService, ClassService, StaffService } from "@/lib/api";
-import { Plus, BookOpen, Search, Trash2, RefreshCw } from "lucide-react";
+import { Plus, BookOpen, Search, Trash2, RefreshCw, Download } from "lucide-react";
+import { generateFlowPDF } from "@/lib/pdfGenerator";
 
 interface SubjectItem { id: string; name: string; code: string; description: string; subjectType: string; status: string; }
 
@@ -63,6 +64,31 @@ export default function SubjectsPage() {
         }
         const randomNum = Math.floor(100 + Math.random() * 900); // 3 digit number e.g. 100-999
         setNewSubject({ ...newSubject, code: `${prefix}${randomNum}` });
+    };
+
+    const downloadFlowGuide = () => {
+        generateFlowPDF({
+            featureName: "Global Subjects",
+            description: "Subjects in this ERP are global entities. This means you create 'Mathematics' once, and then assign it to as many classes as you need (e.g., Class 1A, Class 2B) rather than creating duplicates.",
+            steps: [
+                {
+                    title: "Create the Global Subject",
+                    description: "Click 'Add Subject' to define the subject name, type (Core, Elective), and auto-generate a unique Code.",
+                    example: "Creating 'Science Practical' as a CORE subject."
+                },
+                {
+                    title: "Navigate to a Class",
+                    description: "Go to the 'Classes' tab on the main menu, and click the 'Manage Subjects' (Book) icon for a specific class.",
+                    example: "Opening the management page for 'Class 10A'."
+                },
+                {
+                    title: "Assign Subject to Class",
+                    description: "Select the global subject from the dropdown, choose an available Teacher, and specify the number of Weekly Periods required.",
+                    example: "Assigning 'Science Practical' to 'Class 10A', taught by 'Mr. Smith', for 2 periods per week."
+                }
+            ],
+            proTip: "If you delete a global subject from this master list, it will automatically un-assign it from all classes currently taking it."
+        });
     };
 
     return (
@@ -126,6 +152,12 @@ export default function SubjectsPage() {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                    
+                    <div className="flex justify-end mt-4">
+                        <button onClick={downloadFlowGuide} className="flex items-center gap-2 text-sm text-primary hover:text-blue-700 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200 transition-colors">
+                            <Download className="w-4 h-4" /> Download UI Flow Guide (PDF)
+                        </button>
                     </div>
                 </div>
             </main>

@@ -40,6 +40,9 @@ public class ClassSubjectTeacherService {
             cst.setTeacherId(updated.getTeacherId());
             cst.setPeriodsPerWeek(updated.getPeriodsPerWeek());
             cst.setPriority(updated.getPriority());
+            cst.setIsLab(updated.getIsLab());
+            cst.setConsecutiveBlocks(updated.getConsecutiveBlocks());
+            cst.setRole(updated.getRole());
             return toDto(repository.save(cst));
         }).orElseThrow(() -> new RuntimeException("Assignment not found: " + id));
     }
@@ -56,6 +59,9 @@ public class ClassSubjectTeacherService {
         dto.setTeacherId(cst.getTeacherId());
         dto.setPeriodsPerWeek(cst.getPeriodsPerWeek());
         dto.setPriority(cst.getPriority());
+        dto.setIsLab(cst.getIsLab());
+        dto.setConsecutiveBlocks(cst.getConsecutiveBlocks());
+        dto.setRole(cst.getRole());
 
         schoolClassRepository.findById(cst.getClassId())
                 .ifPresent(c -> dto.setClassName(c.getName()));

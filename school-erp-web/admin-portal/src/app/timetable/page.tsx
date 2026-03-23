@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { TimetableService, ClassService, StaffService, ClassSubjectTeacherService, RoomService, ScheduleService } from "@/lib/api";
-import { Plus, Zap, Calendar, CheckCircle, AlertTriangle, Lock, Unlock, Pencil, Trash2, X } from "lucide-react";
+import { TimetableService, ClassService, StaffService, ClassSubjectTeacherService, RoomService, WorkingDayService, PeriodBlockService } from "@/lib/api";
+import { Plus, Zap, Calendar, CheckCircle, CheckCircle2, AlertTriangle, Lock, Unlock, Pencil, Trash2, X, Printer, Download } from "lucide-react";
+import { generateFlowPDF } from "@/lib/pdfGenerator";
 
 interface Timetable { id: string; academicYear: string; term: string; status: string; }
-interface TimetableSlot { id: string; classId: string; className: string; dayId: string; dayName: string; dayOrder: number; blockId: string; blockName: string; startTime: string; endTime: string; subjectId: string; subjectName: string; teacherId: string; teacherName: string; roomId: string; roomName: string; isLocked: boolean; classSubjectTeacherId: string; }
+interface TimetableSlot { id: string; classId: string; className: string; dayId: string; dayName: string; dayOrder: number; blockId: string; blockName: string; startTime: string; endTime: string; subjectId: string; subjectName: string; teacherId: string; teacherName: string; roomId: string; roomName: string; isLocked: boolean; classSubjectTeacherId: string; isLab: boolean; }
 interface SchoolClass { id: string; name: string; }
 interface Staff { id: string; name: string; }
 interface Assignment { id: string; subjectId: string; subjectName: string; teacherId: string; teacherName: string; }
@@ -22,6 +23,9 @@ export default function TimetablePage() {
     const [staff, setStaff] = useState<Staff[]>([]);
     const [rooms, setRooms] = useState<Room[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Generator Config
+    const [isClassTeacherFirstPeriod, setIsClassTeacherFirstPeriod] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [viewMode, setViewMode] = useState<ViewMode>("class");
     const [selectedClass, setSelectedClass] = useState("");
@@ -35,13 +39,19 @@ export default function TimetablePage() {
     const [editForm, setEditForm] = useState({ classSubjectTeacherId: "", roomId: "" });
     const [addForm, setAddForm] = useState({ classId: "", classSubjectTeacherId: "", roomId: "" });
 
+    const [workingDays, setWorkingDays] = useState<any[]>([]);
+    const [periodBlocks, setPeriodBlocks] = useState<any[]>([]);
+
     useEffect(() => {
         const load = async () => {
             try {
-                const [tt, cls, stf, rm] = await Promise.all([
-                    TimetableService.getAll(), ClassService.getAll(), StaffService.getAll(), RoomService.getAll()
+                const [tt, cls, stf, rm, days, blocks] = await Promise.all([
+                    TimetableService.getAll(), ClassService.getAll(), StaffService.getAll(), RoomService.getAll(),
+                    WorkingDayService.getAll(), PeriodBlockService.getAll()
                 ]);
                 setTimetables(tt); setClasses(cls); setStaff(stf); setRooms(rm);
+                setWorkingDays(days.filter((d: any) => d.isActive).sort((a: any, b: any) => a.dayOrder - b.dayOrder));
+                setPeriodBlocks(blocks.sort((a: any, b: any) => a.startTime.localeCompare(b.startTime)));
             } catch (e) { console.error(e); }
             finally { setLoading(false); }
         };
@@ -90,11 +100,20 @@ export default function TimetablePage() {
         setGenerating(true);
         setGeneralResult(null);
         try {
-            const result = await TimetableService.generate(selectedTimetable.id);
+            const result = await TimetableService.generate(selectedTimetable.id, isClassTeacherFirstPeriod);
             setGeneralResult(result);
-            await loadSlots(selectedTimetable.id);
-        } catch { setGeneralResult({ success: false, message: "Generation failed. Check backend.", conflicts: [] }); }
-        finally { setGenerating(false); }
+            if (result.success) {
+                await loadSlots(selectedTimetable.id);
+            }
+        } catch (error: any) { 
+            setGeneralResult({ 
+                success: false, 
+                message: error.message || "Generation failed. Check backend configuration.", 
+                conflicts: [] 
+            }); 
+        } finally { 
+            setGenerating(false); 
+        }
     };
 
     const handlePublish = async () => {
@@ -169,28 +188,75 @@ export default function TimetablePage() {
 
     // Build the grid structure from flat slots
     const buildGrid = () => {
-        const days = new Map<string, { dayName: string; dayOrder: number; dayId: string }>();
-        const blocks = new Map<string, { blockName: string; blockId: string; startTime: string; endTime: string; }>();
         const slotMap = new Map<string, TimetableSlot>(); // "dayId|blockId" → slot
 
         slots.forEach(s => {
-            if (!days.has(s.dayId)) days.set(s.dayId, { dayName: s.dayName, dayOrder: s.dayOrder, dayId: s.dayId });
-            if (!blocks.has(s.blockId)) blocks.set(s.blockId, { blockName: s.blockName, blockId: s.blockId, startTime: s.startTime, endTime: s.endTime });
-            slotMap.set(s.dayId + "|" + s.blockId, s);
+            const key = s.dayId + "|" + s.blockId;
+            if (slotMap.has(key)) {
+                const existing = slotMap.get(key)!;
+                if (existing.subjectId === s.subjectId) {
+                    if (s.roomName && existing.roomName !== s.roomName && !(existing.roomName || "").includes(s.roomName)) {
+                        existing.roomName = existing.roomName ? existing.roomName + " / " + s.roomName : s.roomName;
+                    }
+                    if (s.teacherName && existing.teacherName !== s.teacherName && !(existing.teacherName || "").includes(s.teacherName)) {
+                        existing.teacherName = existing.teacherName ? existing.teacherName + " / " + s.teacherName : s.teacherName;
+                    }
+                    if (s.className && existing.className !== s.className && !(existing.className || "").includes(s.className)) {
+                        existing.className = existing.className ? existing.className + " / " + s.className : s.className;
+                    }
+                }
+            } else {
+                slotMap.set(key, { ...s });
+            }
         });
 
-        const sortedDays = Array.from(days.values()).sort((a, b) => a.dayOrder - b.dayOrder);
-        const sortedBlocks = Array.from(blocks.values());
-
-        return { sortedDays, sortedBlocks, slotMap };
+        return { slotMap };
     };
 
-    const { sortedDays, sortedBlocks, slotMap } = buildGrid();
+    const downloadFlowGuide = () => {
+        generateFlowPDF({
+            featureName: "Timetable Generation",
+            description: "The Timetable Generator runs an intelligent placement algorithm. It detects un-scheduled 'Subject Requirements' for a class and attempts to find a combination of Teacher availability and Room availability to lock in a slot.",
+            steps: [
+                {
+                    title: "Check Subject Mappings",
+                    description: "Ensure the Class you want to schedule has Subjects mapped to it (via the Classes tab).",
+                    example: "Class 10A has 'Science Practical'."
+                },
+                {
+                    title: "Click Generate Algorithm",
+                    description: "Clicking the 'lightning' icon kicks off the algorithm. It processes class limitations, teacher unavailability schedules, and room requirement conflicts.",
+                    example: "The engine sees 'Science Practical' requires the 'Science Labs' Batch."
+                },
+                {
+                    title: "Room Locking (Batching)",
+                    description: "If a subject requires a single Room Type, it reserves one available room. If it requires a Lab Group, it searches for a time block where ALL rooms in the group are empty, then reserves them simultaneously.",
+                    example: "The system finds Period 2 empty. It places 'Science Practical' for Class 10A into both 'Physics Lab' AND 'Chemistry Lab' exactly at Period 2."
+                },
+                {
+                    title: "Manual Overrides & Publishing",
+                    description: "You can click any blank cell to manually assign a slot, or click a scheduled slot to override/delete it. Once complete, click Publish.",
+                    example: "Clicking 'Publish' finalizes the Term 1 Timetable."
+                }
+            ]
+        });
+    };
+
+    const { slotMap } = buildGrid();
 
     if (loading) return <div className="flex-1 flex items-center justify-center text-muted-foreground">Loading...</div>;
 
     return (
         <div className="flex-1 overflow-y-auto p-6">
+            <style>{`
+                @media print {
+                    body * { visibility: hidden; }
+                    #printable-timetable, #printable-timetable * { visibility: visible; }
+                    #printable-timetable { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; border: none; box-shadow: none; }
+                    #printable-timetable button { display: none !important; }
+                    @page { size: landscape; margin: 10mm; }
+                }
+            `}</style>
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -204,11 +270,46 @@ export default function TimetablePage() {
                                 <CheckCircle className="w-4 h-4" /> Publish
                             </button>
                         )}
+                        {selectedTimetable?.status === "PUBLISHED" && (
+                            <button onClick={() => window.print()} className="flex items-center gap-2 border border-blue-300 text-blue-700 bg-blue-50 px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors">
+                                <Printer className="w-4 h-4" /> Print
+                            </button>
+                        )}
                         {selectedTimetable && (
                             <>
-                                <button onClick={handleGenerate} disabled={generating} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md disabled:opacity-60">
-                                    <Zap className="w-4 h-4" /> {generating ? "Generating..." : "Generate Timetable"}
+                                <button onClick={downloadFlowGuide} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 font-medium">
+                                <Download className="w-4 h-4" /> Usage Guide
+                            </button>
+                            
+                            {/* Hide generate button unless in Class View with a Class Selected */}
+                            {viewMode === "class" && selectedClass && (
+                                <div className="flex items-center gap-3 bg-card border border-border px-3 py-1.5 rounded-lg shadow-sm">
+                                    <label className="flex items-center gap-2 text-sm font-medium text-muted-foreground mr-2 cursor-pointer">
+                                        <input 
+                                            type="checkbox" 
+                                            className="w-4 h-4 rounded text-purple-600 focus:ring-purple-500 cursor-pointer"
+                                            checked={isClassTeacherFirstPeriod}
+                                            onChange={(e) => setIsClassTeacherFirstPeriod(e.target.checked)}
+                                        />
+                                        First hr will be class teacher
+                                    </label>
+                                    <button
+                                        onClick={handleGenerate} disabled={generating || selectedTimetable.status === "PUBLISHED"}
+                                        className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 transition-colors shadow-sm font-medium"
+                                    >
+                                        <Zap className="w-4 h-4" /> {generating ? "Generating..." : "Generate Algorithm"}
+                                    </button>
+                                </div>
+                            )}
+
+                            {selectedTimetable.status !== "PUBLISHED" && (
+                                <button
+                                    onClick={handlePublish}
+                                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition shadow-sm font-medium"
+                                >
+                                    <CheckCircle2 className="w-4 h-4" /> Publish Final
                                 </button>
+                            )}
                                 <button onClick={handleDeleteTimetable} title="Delete this timetable" className="flex items-center gap-1.5 border border-red-200 text-red-600 bg-red-50 px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-100 transition-colors">
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -287,66 +388,90 @@ export default function TimetablePage() {
                         <p className="text-sm mt-1">Click &quot;Generate Timetable&quot; to auto-schedule, or add individual entries.</p>
                     </div>
                 ) : (
-                    <div className="bg-card border border-border rounded-xl shadow-sm overflow-x-auto">
-                        <table className="w-full text-xs border-collapse min-w-[600px]">
+                    <div id="printable-timetable" className="bg-card border border-border rounded-xl shadow-sm overflow-x-auto">
+                        <table className="table-fixed w-full text-xs border-collapse min-w-[800px]">
                             <thead>
                                 <tr className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
                                     <th className="p-3 text-left font-semibold w-32">Block</th>
-                                    {sortedDays.map(d => (
-                                        <th key={d.dayId} className="p-3 text-center font-semibold min-w-[130px]">{d.dayName}</th>
+                                    {workingDays.map(d => (
+                                        <th key={d.id} className="p-3 text-center font-semibold min-w-[130px]">{d.dayName}</th>
                                     ))}
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedBlocks.map((block, bi) => (
-                                    <tr key={block.blockId} className={bi % 2 === 0 ? "bg-card" : "bg-muted/20"}>
-                                        <td className="p-2 border-r border-border">
-                                            <p className="font-semibold text-foreground">{block.blockName}</p>
-                                            <p className="text-muted-foreground text-[10px]">{block.startTime}–{block.endTime}</p>
-                                        </td>
-                                        {sortedDays.map(day => {
-                                            const slot = slotMap.get(day.dayId + "|" + block.blockId);
-                                            return (
-                                                <td key={day.dayId} className="p-1.5 border-r border-border align-top">
-                                                    {slot ? (
-                                                        <div className={`rounded-lg p-2 ${slot.isLocked ? "bg-indigo-50 border border-indigo-200" : "bg-blue-50 border border-blue-100 hover:border-blue-300"} transition-all group relative`}>
-                                                            <div className="flex items-start justify-between gap-1">
-                                                                <div className="flex-1 min-w-0">
-                                                                    <p className="font-semibold text-blue-900 truncate">{slot.subjectName}</p>
-                                                                    <p className="text-[10px] text-blue-600 truncate">{slot.teacherName || "—"}</p>
-                                                                    {slot.roomName && <p className="text-[10px] text-blue-500 truncate">📍 {slot.roomName}</p>}
-                                                                    {viewMode === "teacher" && <p className="text-[10px] text-indigo-600 truncate">🏛 {slot.className}</p>}
-                                                                </div>
-                                                                <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <button onClick={() => handleToggleLock(slot)} title={slot.isLocked ? "Unlock" : "Lock"} className="text-muted-foreground hover:text-foreground">
-                                                                        {slot.isLocked ? <Lock className="w-3 h-3 text-indigo-500" /> : <Unlock className="w-3 h-3" />}
-                                                                    </button>
-                                                                    <button onClick={() => handleOpenEdit(slot)} title="Edit slot" className="text-muted-foreground hover:text-blue-600">
-                                                                        <Pencil className="w-3 h-3" />
-                                                                    </button>
-                                                                    <button onClick={() => handleDeleteSlot(slot)} title="Delete slot" className="text-muted-foreground hover:text-red-600">
-                                                                        <Trash2 className="w-3 h-3" />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleOpenAddCell({ dayId: day.dayId, dayName: day.dayName, blockId: block.blockId, blockName: block.blockName })}
-                                                            className="w-full h-14 rounded-lg border border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-blue-400 hover:bg-blue-50/60 hover:text-blue-500 transition-all group"
-                                                            title={`Add entry: ${day.dayName} · ${block.blockName}`}
-                                                        >
-                                                            <span className="text-[10px] group-hover:hidden">free</span>
-                                                            <Plus className="w-3 h-3 hidden group-hover:block" />
-                                                        </button>
-                                                    )}
+                                {periodBlocks.map((block, bi) => {
+                                    const isBreak = block.blockType === "BREAK" || block.blockType === "LUNCH";
+                                    return (
+                                        <tr key={block.id} className={bi % 2 === 0 ? "bg-card" : "bg-muted/20"}>
+                                            <td className="p-2 border-r border-border">
+                                                <p className={`font-semibold ${isBreak ? (block.blockType === "LUNCH" ? "text-green-600" : "text-amber-600") : "text-foreground"}`}>{block.blockName}</p>
+                                                <p className="text-muted-foreground text-[10px]">{block.startTime}–{block.endTime}</p>
+                                            </td>
+                                            {isBreak ? (
+                                                <td colSpan={workingDays.length} className={`p-4 text-center font-bold tracking-widest ${block.blockType === "LUNCH" ? "text-green-600/60 bg-green-50/40" : "text-amber-600/60 bg-amber-50/40"} uppercase`}>
+                                                    {block.blockName}
                                                 </td>
-                                            );
-                                        })}
-                                    </tr>
-                                ))}
+                                            ) : (
+                                                workingDays.map(day => {
+                                                    const slot = slotMap.get(day.id + "|" + block.id);
+                                                    return (
+                                                        <td key={day.id} className="p-1.5 border-r border-border align-top">
+                                                            {slot ? (
+                                                                <div className={`rounded-lg p-2 transition-all group relative ${
+                                                                    slot.isLocked 
+                                                                        ? "bg-indigo-50 border border-indigo-200" 
+                                                                        : slot.isLab 
+                                                                            ? "bg-purple-50 border border-purple-200 hover:border-purple-400" 
+                                                                            : "bg-blue-50 border border-blue-100 hover:border-blue-300"
+                                                                }`}>
+                                                                    <div className="flex items-start justify-between gap-1">
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="flex items-center gap-1.5 mb-0.5">
+                                                                                <p className={`font-semibold truncate ${slot.isLab ? "text-purple-900" : "text-blue-900"}`}>{slot.subjectName}</p>
+                                                                                {slot.isLab && <span className="inline-flex flex-shrink-0 px-1 py-0.5 bg-purple-100 text-purple-700 text-[8px] font-bold rounded uppercase tracking-wider border border-purple-200">LAB</span>}
+                                                                            </div>
+                                                                            <p className={`text-[10px] truncate ${slot.isLab ? "text-purple-700" : "text-blue-600"}`}>{slot.teacherName || "—"}</p>
+                                                                            {slot.roomName && <p className={`text-[10px] truncate ${slot.isLab ? "text-purple-600" : "text-blue-500"}`}>📍 {slot.roomName}</p>}
+                                                                            {viewMode === "teacher" && <p className="text-[10px] text-indigo-600 truncate">🏛 {slot.className}</p>}
+                                                                        </div>
+                                                                        <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                            <button onClick={() => handleToggleLock(slot)} title={slot.isLocked ? "Unlock" : "Lock"} className="text-muted-foreground hover:text-foreground">
+                                                                                {slot.isLocked ? <Lock className="w-3 h-3 text-indigo-500" /> : <Unlock className="w-3 h-3" />}
+                                                                            </button>
+                                                                            <button onClick={() => handleOpenEdit(slot)} title="Edit slot" className="text-muted-foreground hover:text-blue-600">
+                                                                                <Pencil className="w-3 h-3" />
+                                                                            </button>
+                                                                            <button onClick={() => handleDeleteSlot(slot)} title="Delete slot" className="text-muted-foreground hover:text-red-600">
+                                                                                <Trash2 className="w-3 h-3" />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => handleOpenAddCell({ dayId: day.id, dayName: day.dayName, blockId: block.id, blockName: block.blockName })}
+                                                                    className="w-full h-14 rounded-lg border border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-blue-400 hover:bg-blue-50/60 hover:text-blue-500 transition-all group"
+                                                                    title={`Add entry: ${day.dayName} · ${block.blockName}`}
+                                                                >
+                                                                    <span className="text-[10px] group-hover:hidden">free</span>
+                                                                    <Plus className="w-3 h-3 hidden group-hover:block" />
+                                                                </button>
+                                                            )}
+                                                        </td>
+                                                    );
+                                                })
+                                            )}
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
+                        
+                        <div className="flex justify-end mt-4">
+                            <button onClick={downloadFlowGuide} className="flex items-center gap-2 text-sm text-primary hover:text-blue-700 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200 transition-colors">
+                                <Download className="w-4 h-4" /> Download UI Flow Guide (PDF)
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

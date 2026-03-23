@@ -13,4 +13,6 @@ public interface SubstitutionRepository extends JpaRepository<Substitution, Stri
     List<Substitution> findByOriginalTeacherIdAndDate(String originalTeacherId, LocalDate date);
 
     List<Substitution> findByDateBetween(LocalDate from, LocalDate to);
+
+    void deleteByBlockId(String blockId);
 }

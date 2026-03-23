@@ -16,6 +16,15 @@ type ConfirmAction = {
 } | null;
 
 const BLOCK_TYPES = ["PERIOD", "BREAK", "LUNCH"];
+
+// Auto-compute end time given a start time and duration in minutes
+function addMinutes(time: string, minutes: number): string {
+    const [h, m] = time.split(":").map(Number);
+    const total = h * 60 + m + minutes;
+    const hh = Math.floor(total / 60) % 24;
+    const mm = total % 60;
+    return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
 const BLOCK_COLORS: Record<string, string> = {
     PERIOD: "bg-blue-50 border-blue-200 text-blue-800",
     BREAK: "bg-amber-50 border-amber-200 text-amber-800",
@@ -277,7 +286,11 @@ export default function ScheduleConfigPage() {
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">Start</label>
-                                    <input type="time" required value={newBlock.startTime} onChange={e => setNewBlock({ ...newBlock, startTime: e.target.value })} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
+                                    <input type="time" required value={newBlock.startTime} onChange={e => {
+                                        const st = e.target.value;
+                                        const et = addMinutes(st, 45);
+                                        setNewBlock({ ...newBlock, startTime: st, endTime: et });
+                                    }} className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                                 </div>
                                 <div>
                                     <label className="text-sm font-medium mb-1 block">End</label>

@@ -25,4 +25,5 @@ public class TimetableSlotDto {
     private String roomId;
     private String roomName;
     private Boolean isLocked;
+    private Boolean isLab;
 }

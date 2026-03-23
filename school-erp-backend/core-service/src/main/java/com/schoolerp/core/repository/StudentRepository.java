@@ -9,9 +9,12 @@ import java.util.Optional;
 
 @Repository
 public interface StudentRepository extends JpaRepository<Student, String> {
-    Optional<Student> findByAdmissionNumber(String admissionNumber);
-    List<Student> findByParentId(String parentId);
-    List<Student> findByClassId(String classId);
-    List<Student> findByStatus(String status);
+    List<Student> findByIsActiveTrue();
+    Optional<Student> findByAdmissionNumberAndIsActiveTrue(String admissionNumber);
+    List<Student> findByParentIdAndIsActiveTrue(String parentId);
+    List<Student> findByClassIdAndIsActiveTrue(String classId);
+    List<Student> findByClassIdAndIsActiveTrueOrderByNameAsc(String classId);
+    List<Student> findByStatusAndIsActiveTrue(String status);
+    Optional<Student> findFirstByParentContactAndIsActiveTrue(String parentContact);
     Optional<Student> findFirstByParentContact(String parentContact);
 }

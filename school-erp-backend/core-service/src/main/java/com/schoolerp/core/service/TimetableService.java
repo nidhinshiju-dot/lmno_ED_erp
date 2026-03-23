@@ -72,6 +72,12 @@ public class TimetableService {
             dto.setTeacherId(ts.getTeacherId());
             dto.setSubjectId(ts.getSubjectId());
             dto.setRoomId(ts.getRoomId());
+            
+            List<ClassSubjectTeacher> csts = cstRepository.findByClassIdAndSubjectId(ts.getClassId(), ts.getSubjectId());
+            if (!csts.isEmpty()) {
+                dto.setIsLab(csts.get(0).getIsLab());
+            }
+
             enrichTeacher(dto);
             enrichClass(dto);
             enrichDay(dto);
@@ -246,6 +252,7 @@ public class TimetableService {
             if (cst != null) {
                 dto.setTeacherId(cst.getTeacherId());
                 dto.setSubjectId(cst.getSubjectId());
+                dto.setIsLab(cst.getIsLab());
                 Subject subj = subjectMap.get(cst.getSubjectId());
                 if (subj != null)
                     dto.setSubjectName(subj.getName());

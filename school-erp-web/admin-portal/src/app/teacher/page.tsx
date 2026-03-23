@@ -1,121 +1,111 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import Header from "@/components/Header";
-import { TeacherService, CourseService } from "@/lib/api";
-import { Users, BookOpen, ClipboardCheck, GraduationCap } from "lucide-react";
+import { CalendarDays, Users, Clock, ClipboardCheck, GraduationCap, BookOpen } from "lucide-react";
 import Link from "next/link";
-
-interface ClassItem { id: string; name: string; }
-interface CourseItem { id: string; title: string; code: string; }
+import Header from "@/components/Header";
 
 export default function TeacherDashboard() {
-    const [classes, setClasses] = useState<ClassItem[]>([]);
-    const [courses, setCourses] = useState<CourseItem[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    // For demo, use a hardcoded staffId — in production read from JWT/auth context
-    const staffId = "demo-staff-id";
-
-    useEffect(() => {
-        const load = async () => {
-            try {
-                const [classData, courseData] = await Promise.all([
-                    TeacherService.getMyClasses(staffId),
-                    CourseService.getAll(),
-                ]);
-                setClasses(classData);
-                setCourses(courseData);
-            } catch { console.error("Failed to load teacher data"); }
-            finally { setLoading(false); }
-        };
-        load();
-    }, []);
-
     return (
-        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background">
-
-            <main className="flex-1 overflow-y-auto p-6">
-                <div className="max-w-5xl mx-auto space-y-6">
+        <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-zinc-950 overflow-y-auto">
+            <Header />
+            <main className="p-4 md:p-8 max-w-7xl mx-auto w-full space-y-8">
+                
+                {/* Greeting Section */}
+                <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-8 shadow-sm flex flex-col md:flex-row items-center gap-6 justify-between">
                     <div>
-                        <h2 className="text-3xl font-bold tracking-tight">Welcome, Teacher 👋</h2>
-                        <p className="text-muted-foreground mt-1">Here&apos;s your class overview and quick actions.</p>
+                        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white flex items-center gap-3">
+                            <span>Welcome back, Teacher!</span>
+                            <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-400 text-xs px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">Faculty</span>
+                        </h1>
+                        <p className="text-slate-500 mt-2 text-sm max-w-2xl">
+                            Here is an overview of your academic responsibilities for today. You have 4 periods scheduled and your homeroom attendance is pending.
+                        </p>
                     </div>
-
-                    {/* Stats Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-card border border-border rounded-xl p-6 flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-blue-50 text-primary flex items-center justify-center"><Users className="w-6 h-6" /></div>
-                            <div>
-                                <p className="text-2xl font-bold">{classes.length}</p>
-                                <p className="text-sm text-muted-foreground">My Classes</p>
-                            </div>
-                        </div>
-                        <div className="bg-card border border-border rounded-xl p-6 flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><BookOpen className="w-6 h-6" /></div>
-                            <div>
-                                <p className="text-2xl font-bold">{courses.length}</p>
-                                <p className="text-sm text-muted-foreground">My Courses</p>
-                            </div>
-                        </div>
-                        <div className="bg-card border border-border rounded-xl p-6 flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center"><ClipboardCheck className="w-6 h-6" /></div>
-                            <div>
-                                <p className="text-2xl font-bold">—</p>
-                                <p className="text-sm text-muted-foreground">Pending Grading</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Quick Links */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Link href="/teacher/my-students" className="bg-card border border-border rounded-xl p-6 hover:bg-muted/50 transition-colors group">
-                            <div className="flex items-center gap-3">
-                                <GraduationCap className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
-                                <div>
-                                    <h3 className="font-bold">My Students</h3>
-                                    <p className="text-sm text-muted-foreground">View students in your classes.</p>
-                                </div>
-                            </div>
-                        </Link>
-                        <Link href="/teacher/assignments" className="bg-card border border-border rounded-xl p-6 hover:bg-muted/50 transition-colors group">
-                            <div className="flex items-center gap-3">
-                                <ClipboardCheck className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
-                                <div>
-                                    <h3 className="font-bold">Assignments</h3>
-                                    <p className="text-sm text-muted-foreground">Create and manage course assignments.</p>
-                                </div>
-                            </div>
+                    <div className="flex items-center gap-3">
+                        <Link href="/teacher/my-class" className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md shadow-indigo-600/20 transition flex items-center gap-2 text-sm">
+                            <ClipboardCheck className="w-4 h-4" />
+                            Take Homeroom Attendance
                         </Link>
                     </div>
-
-                    {/* My Classes Table */}
-                    {loading ? (
-                        <p className="text-center text-muted-foreground py-8">Loading...</p>
-                    ) : (
-                        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-                            <div className="px-6 py-4 border-b border-border">
-                                <h3 className="font-semibold">My Classes (Class Teacher)</h3>
-                            </div>
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-muted/50 border-b border-border">
-                                    <tr>
-                                        <th className="p-4 font-semibold text-muted-foreground">Class</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {classes.length === 0 ? (
-                                        <tr><td colSpan={1} className="p-6 text-center text-muted-foreground">No classes assigned yet.</td></tr>
-                                    ) : classes.map(c => (
-                                        <tr key={c.id} className="border-b border-border hover:bg-muted/30 transition-colors">
-                                            <td className="p-4 font-medium">{c.name}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
                 </div>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex items-start justify-between group hover:border-indigo-300 transition">
+                        <div>
+                            <p className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Upcoming Period</p>
+                            <h3 className="text-2xl font-extrabold text-slate-800 dark:text-zinc-100">Grade 10 Physics</h3>
+                            <p className="text-sm text-slate-500 font-medium mt-1 flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" /> 09:00 AM — Room 102
+                            </p>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center shrink-0">
+                            <CalendarDays className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex items-start justify-between group hover:border-emerald-300 transition">
+                        <div>
+                            <p className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">My Class (Homeroom)</p>
+                            <h3 className="text-2xl font-extrabold text-slate-800 dark:text-zinc-100">Grade 8-A</h3>
+                            <p className="text-sm text-emerald-600 font-medium mt-1 flex items-center gap-1">
+                                40 Students Registered
+                            </p>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0">
+                            <Users className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 shadow-sm flex items-start justify-between group hover:border-orange-300 transition">
+                        <div>
+                            <p className="text-sm font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Assigned Subjects</p>
+                            <h3 className="text-2xl font-extrabold text-slate-800 dark:text-zinc-100">3 Courses</h3>
+                            <p className="text-sm text-slate-500 font-medium mt-1 flex items-center gap-1">
+                                Physics, Math, Comp Sci
+                            </p>
+                        </div>
+                        <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center shrink-0">
+                            <BookOpen className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Today's Agenda visual mockup */}
+                <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-8 shadow-sm">
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-indigo-600" /> Today's Agenda
+                    </h2>
+                    
+                    <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
+                        
+                        <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white dark:border-zinc-900 bg-indigo-600 text-white shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow absolute left-0 md:left-1/2 -translate-x-1/2">
+                                <ClipboardCheck className="w-4 h-4" />
+                            </div>
+                            <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] ml-14 md:ml-0 p-4 rounded-xl border border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20 dark:border-indigo-800 shadow-sm">
+                                <div className="flex items-center justify-between space-x-2 mb-1">
+                                    <div className="font-bold text-indigo-900 dark:text-indigo-300 text-sm">Homeroom Attendance</div>
+                                    <time className="font-mono text-indigo-600 text-xs font-bold">08:00 AM</time>
+                                </div>
+                                <div className="text-slate-500 dark:text-zinc-400 text-sm">Grade 8-A (Room 101)</div>
+                            </div>
+                        </div>
+
+                        <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white dark:border-zinc-900 bg-slate-300 text-slate-600 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow absolute left-0 md:left-1/2 -translate-x-1/2">
+                                <BookOpen className="w-4 h-4" />
+                            </div>
+                            <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] ml-14 md:ml-0 p-4 rounded-xl border border-slate-200 bg-white dark:bg-zinc-800 dark:border-zinc-700 shadow-sm">
+                                <div className="flex items-center justify-between space-x-2 mb-1">
+                                    <div className="font-bold text-slate-800 dark:text-zinc-200 text-sm">Physics (Period 1)</div>
+                                    <time className="font-mono text-slate-500 text-xs font-bold">09:00 AM</time>
+                                </div>
+                                <div className="text-slate-500 dark:text-zinc-400 text-sm">Grade 10 (Room 205)</div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
             </main>
         </div>
     );

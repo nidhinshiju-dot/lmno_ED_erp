@@ -34,6 +34,10 @@ public class ClassSubjectTeacher {
     @Column(name = "teacher_id", nullable = false)
     private String teacherId;
 
+    /** Role of the teacher for this subject: PRIMARY or ASSISTANT */
+    @Column(name = "role")
+    private String role = "PRIMARY";
+
     /**
      * Number of periods per week this teacher teaches this subject to this class
      */
@@ -44,6 +48,12 @@ public class ClassSubjectTeacher {
     @Column(name = "priority")
     private Integer priority = 0;
 
+    @Column(name = "is_lab", nullable = false)
+    private Boolean isLab = false;
+
+    @Column(name = "consecutive_blocks", nullable = false)
+    private Integer consecutiveBlocks = 1;
+
     @Column(name = "created_at", updatable = false)
     private java.time.LocalDateTime createdAt;
 
@@ -53,6 +63,10 @@ public class ClassSubjectTeacher {
             periodsPerWeek = 1;
         if (priority == null)
             priority = 0;
+        if (isLab == null)
+            isLab = false;
+        if (consecutiveBlocks == null || consecutiveBlocks < 1)
+            consecutiveBlocks = 1;
         createdAt = java.time.LocalDateTime.now();
     }
 }

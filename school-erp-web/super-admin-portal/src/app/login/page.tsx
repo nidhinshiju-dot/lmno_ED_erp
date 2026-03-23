@@ -20,12 +20,33 @@ export default function LoginPage() {
         try {
             const response = await AuthService.login({ email, password });
             
+            let userRole = "SUPER_ADMIN";
+            let userId = "admin";
+            try {
+                const base64Url = response.token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                const payload = JSON.parse(jsonPayload);
+                if (payload.role) userRole = payload.role;
+                if (payload.sub) userId = payload.sub;
+            } catch (e) {
+                console.error("Failed to parse JWT payload", e);
+            }
+
             // Validate the role
-            if (response.user.role !== "SUPER_ADMIN") {
+            if (userRole !== "SUPER_ADMIN") {
                 throw new Error("Unauthorized access. Super Admin only.");
             }
 
-            login(response.token, response.user);
+            login(response.token, {
+                id: userId,
+                email: email,
+                name: "Platform Manager",
+                tenantId: "platform",
+                role: userRole
+            });
         } catch (err: any) {
             setError(err.message || "Invalid credentials");
         } finally {

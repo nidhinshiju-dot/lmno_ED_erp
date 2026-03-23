@@ -1,5 +1,6 @@
 package com.schoolerp.core.service;
 
+import com.schoolerp.core.dto.SchoolCreationResponse;
 import com.schoolerp.core.entity.School;
 import com.schoolerp.core.repository.SchoolRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class SchoolService {
     }
 
     @org.springframework.transaction.annotation.Transactional
-    public School createSchool(School school) {
+    public SchoolCreationResponse createSchool(School school) {
         School savedSchool = repository.save(school);
         
         String tenantId = savedSchool.getId();
@@ -64,18 +65,12 @@ public class SchoolService {
             org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
             restTemplate.postForObject(url, request, String.class);
             
-            // Log or store the temporary password somehow (For now, print it for the tester)
-            System.out.println("==================================================");
-            System.out.println("NEW SCHOOL PROVISIONED: " + school.getName());
-            System.out.println("ADMIN EMAIL: " + school.getContactEmail());
-            System.out.println("ADMIN PASSWORD: " + defaultPassword);
-            System.out.println("==================================================");
+            // Return the temp password in the response so the frontend can display it
+            return new SchoolCreationResponse(savedSchool, school.getContactEmail(), defaultPassword);
             
         } catch (Exception e) {
             throw new RuntimeException("Failed to provision tenant database: " + e.getMessage(), e);
         }
-
-        return savedSchool;
     }
     
     public School toggleStatus(String id) {

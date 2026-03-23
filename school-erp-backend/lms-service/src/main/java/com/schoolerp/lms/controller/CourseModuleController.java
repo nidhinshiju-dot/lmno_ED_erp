@@ -51,20 +51,12 @@ public class CourseModuleController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    @Autowired
-    private com.schoolerp.lms.repository.LessonRepository lessonRepository;
-
     /** Delete a module */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable String id) {
         if (moduleRepository.findById(id).isEmpty()) return ResponseEntity.notFound().build();
-        
-        // Prevent deletion if lessons exist inside this module
-        if (!lessonRepository.findByModuleIdOrderByOrderIndexAsc(id).isEmpty()) {
-            throw new org.springframework.dao.DataIntegrityViolationException("Cannot delete module. It still contains active lessons.");
-        }
-        
         moduleRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }
+

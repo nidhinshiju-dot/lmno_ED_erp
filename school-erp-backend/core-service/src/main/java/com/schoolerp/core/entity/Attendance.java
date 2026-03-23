@@ -29,8 +29,17 @@ public class Attendance {
     @Column(nullable = false)
     private LocalDate date;
 
+    @Column(name = "period_block_id")
+    private String periodBlockId; // Nullable, used only in PERIOD mode
+
     @Column(nullable = false)
-    private String status; // PRESENT, ABSENT, LATE
+    private String status; // PRESENT, ABSENT, LEAVE, MEDICAL_LEAVE, LATE_ENTRY, HALF_DAY
+
+    @Column(name = "recorded_by")
+    private String recordedBy; // User ID who marked attendance
+
+    @Column(name = "recorded_role")
+    private String recordedRole; // TEACHER or ADMIN
 
     private String remarks;
 }

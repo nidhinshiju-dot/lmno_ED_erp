@@ -38,6 +38,11 @@ public class SchoolClassController {
         return schoolClassService.assignTeacher(id, staffId);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<SchoolClass> updateClass(@PathVariable("id") String id, @Valid @RequestBody SchoolClass schoolClass) {
+        return ResponseEntity.ok(schoolClassService.updateClass(id, schoolClass));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteClass(@PathVariable("id") String id) {
         schoolClassService.deleteClass(id);

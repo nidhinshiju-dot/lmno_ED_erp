@@ -31,13 +31,13 @@ public class ScheduleConfigController {
     }
 
     @PatchMapping("/working-days/{id}/toggle")
-    public WorkingDay toggleDay(@PathVariable String id,
+    public WorkingDay toggleDay(@PathVariable("id") String id,
             @Valid @RequestBody Map<String, Boolean> body) {
         return service.toggleDay(id, Boolean.TRUE.equals(body.get("isActive")));
     }
 
     @DeleteMapping("/working-days/{id}")
-    public ResponseEntity<Void> deleteWorkingDay(@PathVariable String id) {
+    public ResponseEntity<Void> deleteWorkingDay(@PathVariable("id") String id) {
         service.deleteWorkingDay(id);
         return ResponseEntity.noContent().build();
     }
@@ -55,13 +55,13 @@ public class ScheduleConfigController {
     }
 
     @PutMapping("/period-blocks/{id}")
-    public PeriodBlock updatePeriodBlock(@PathVariable String id,
+    public PeriodBlock updatePeriodBlock(@PathVariable("id") String id,
             @Valid @RequestBody PeriodBlock block) {
         return service.updatePeriodBlock(id, block);
     }
 
     @DeleteMapping("/period-blocks/{id}")
-    public ResponseEntity<Void> deletePeriodBlock(@PathVariable String id) {
+    public ResponseEntity<Void> deletePeriodBlock(@PathVariable("id") String id) {
         service.deletePeriodBlock(id);
         return ResponseEntity.noContent().build();
     }

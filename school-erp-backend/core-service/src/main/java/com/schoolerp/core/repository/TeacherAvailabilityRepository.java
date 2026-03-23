@@ -11,4 +11,7 @@ public interface TeacherAvailabilityRepository extends JpaRepository<TeacherAvai
     Optional<TeacherAvailability> findByTeacherIdAndDayIdAndBlockId(String teacherId, String dayId, String blockId);
 
     List<TeacherAvailability> findByTeacherIdAndIsAvailableFalse(String teacherId);
+
+    void deleteByBlockId(String blockId);
+    void deleteByDayId(String dayId);
 }

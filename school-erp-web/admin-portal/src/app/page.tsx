@@ -1,139 +1,109 @@
-"use client";
+import Link from 'next/link';
+import { ShieldCheck, GraduationCap, Users, BookOpen, Sparkles, ArrowRight, BrainCircuit } from 'lucide-react';
 
-import { useAuth } from "@/components/AuthProvider";
-import { Users, GraduationCap, IndianRupee, Activity } from "lucide-react";
-import { useEffect, useState } from "react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { StudentService, StaffService } from "@/lib/api";
-import AdminCopilot from "@/components/AdminCopilot";
-
-const mockChartData = [
-  { name: 'Jan', revenue: 0, attendance: 0 },
-  { name: 'Feb', revenue: 0, attendance: 0 },
-  { name: 'Mar', revenue: 0, attendance: 0 },
-  { name: 'Apr', revenue: 0, attendance: 0 },
-  { name: 'May', revenue: 0, attendance: 0 },
-  { name: 'Jun', revenue: 0, attendance: 0 },
-  { name: 'Jul', revenue: 0, attendance: 0 },
-];
-
-export default function DashboardPage() {
-  const { user } = useAuth();
-  const [studentCount, setStudentCount] = useState<number | string>("...");
-  const [staffCount, setStaffCount] = useState<number | string>("...");
-
-  useEffect(() => {
-    StudentService.getAll()
-      .then(res => setStudentCount(res.length))
-      .catch((e) => setStudentCount(0));
-      
-    StaffService.getAll()
-      .then(res => setStaffCount(res.length))
-      .catch(() => setStaffCount(0));
-  }, []);
-
-  const stats = [
-    { label: "Total Students", value: studentCount, icon: GraduationCap, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { label: "Active Staff", value: staffCount, icon: Users, color: "text-indigo-500", bg: "bg-indigo-500/10" },
-    { label: "Revenue Collected", value: "₹0", icon: IndianRupee, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { label: "Average Attendance", value: "0%", icon: Activity, color: "text-purple-500", bg: "bg-purple-500/10" },
-  ];
-
+export default function LandingPage() {
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Overview</h2>
-        <p className="text-muted-foreground mt-2">Welcome back, {user?.name || "Admin"}! Here&apos;s what&apos;s happening today.</p>
-      </div>
+    <div className="min-h-screen bg-slate-950 text-slate-50 relative overflow-hidden flex flex-col items-center justify-center p-6 sm:p-12">
+      
+      {/* Background Effects */}
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-emerald-600/20 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-[40%] left-[30%] w-[40%] h-[40%] bg-purple-600/10 blur-[150px] rounded-full pointer-events-none" />
 
-
-
-      {/* Main Content & Elsa Layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+      {/* Hero Content */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col items-center text-center space-y-8">
         
-        {/* Left Content (KPIs, Charts & Recent Activity) */}
-        <div className="xl:col-span-3 space-y-6">
-          
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {stats.map((stat, i) => {
-              const Icon = stat.icon;
-              return (
-                <div key={i} className="p-6 rounded-2xl bg-card border border-border flex items-center gap-4 hover:border-gray-600 transition-colors shadow-sm">
-                  <div className={`p-4 rounded-xl ${stat.bg}`}>
-                    <Icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                    <h3 className="text-3xl font-bold mt-1">{stat.value}</h3>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          {/* Main Chart Area */}
-          <div className="rounded-2xl bg-card border border-border p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="font-semibold text-lg">Revenue vs Attendance Overview</h3>
-              <select className="bg-muted border border-border text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary">
-                <option>Last 7 Months</option>
-                <option>This Year</option>
-              </select>
-            </div>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={mockChartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorAttendance" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis yAxisId="left" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
-                  <YAxis yAxisId="right" orientation="right" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}%`} />
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#333" />
-                  <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', borderRadius: '8px' }} />
-                  <Area yAxisId="left" type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRevenue)" />
-                  <Area yAxisId="right" type="monotone" dataKey="attendance" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorAttendance)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/50 border border-slate-800 backdrop-blur-md shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <BrainCircuit className="w-5 h-5 text-emerald-400" />
+          <span className="text-sm font-semibold tracking-wide text-slate-300">Next-Gen AI Powered Learning</span>
+          <Sparkles className="w-4 h-4 text-emerald-400" />
+        </div>
 
-          {/* Side Panel Area */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="rounded-2xl bg-card border border-border p-6 shadow-sm">
-              <h3 className="font-semibold text-lg mb-4">Recent Enrollments</h3>
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <GraduationCap className="w-10 h-10 text-muted-foreground/30 mb-3" />
-                <p className="text-sm font-medium text-foreground">No recent enrollments</p>
-                <p className="text-xs text-muted-foreground mt-1">New students will appear here.</p>
+        {/* Headlines */}
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-150 fill-mode-both">
+          <h1 className="text-6xl sm:text-7xl font-extrabold tracking-tight">
+            <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
+              LMNO ERP
+            </span>
+          </h1>
+          <p className="text-xl sm:text-2xl text-slate-400 max-w-3xl mx-auto leading-relaxed font-light">
+            The intelligent, AI-based LMS platform elevating education to the next level. Seamlessly connecting Admins, Teachers, Students, and Parents.
+          </p>
+        </div>
+
+        {/* Portal Cards */}
+        <div className="w-full mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-300 fill-mode-both">
+          
+          {/* Admin */}
+          <Link href="/login" className="group">
+            <div className="h-full flex flex-col items-start p-8 rounded-3xl bg-slate-900/40 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900/80 transition-all duration-300 backdrop-blur-sm shadow-xl hover:-translate-y-1 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="p-4 rounded-2xl bg-indigo-500/20 text-indigo-400 mb-6 group-hover:scale-110 transition-transform">
+                <ShieldCheck className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">Admin Portal</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-8 flex-1">
+                Full-scale institutional management, automated timetables, and system configurations.
+              </p>
+              <div className="flex items-center gap-2 text-indigo-400 font-semibold text-sm group-hover:gap-3 transition-all mt-auto">
+                Access Gateway <ArrowRight className="w-4 h-4" />
               </div>
             </div>
-            
-            <div className="rounded-2xl bg-card border border-border p-6 shadow-sm">
-               <h3 className="font-semibold text-lg mb-4">Tasks</h3>
-               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <p className="text-sm font-medium text-foreground">All caught up!</p>
-               </div>
+          </Link>
+
+          {/* Teacher */}
+          <Link href="/teacher" className="group">
+            <div className="h-full flex flex-col items-start p-8 rounded-3xl bg-slate-900/40 border border-slate-800 hover:border-teal-500/50 hover:bg-slate-900/80 transition-all duration-300 backdrop-blur-sm shadow-xl hover:-translate-y-1 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="p-4 rounded-2xl bg-teal-500/20 text-teal-400 mb-6 group-hover:scale-110 transition-transform">
+                <BookOpen className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">Teacher Portal</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-8 flex-1">
+                Manage your classrooms, take attendance, view personalized schedules, and monitor student progress.
+              </p>
+              <div className="flex items-center gap-2 text-teal-400 font-semibold text-sm group-hover:gap-3 transition-all mt-auto">
+                Access Gateway <ArrowRight className="w-4 h-4" />
+              </div>
             </div>
-          </div>
+          </Link>
+
+          {/* Student */}
+          <Link href="/student" className="group">
+            <div className="h-full flex flex-col items-start p-8 rounded-3xl bg-slate-900/40 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900/80 transition-all duration-300 backdrop-blur-sm shadow-xl hover:-translate-y-1 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="p-4 rounded-2xl bg-emerald-500/20 text-emerald-400 mb-6 group-hover:scale-110 transition-transform">
+                <GraduationCap className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">Student Portal</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-8 flex-1">
+                Your AI-powered learning hub. Access courses, view your timetable, and complete assignments.
+              </p>
+              <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm group-hover:gap-3 transition-all mt-auto">
+                Access Gateway <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+
+          {/* Parent */}
+          <Link href="/parent" className="group">
+            <div className="h-full flex flex-col items-start p-8 rounded-3xl bg-slate-900/40 border border-slate-800 hover:border-purple-500/50 hover:bg-slate-900/80 transition-all duration-300 backdrop-blur-sm shadow-xl hover:-translate-y-1 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="p-4 rounded-2xl bg-purple-500/20 text-purple-400 mb-6 group-hover:scale-110 transition-transform">
+                <Users className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">Parent Portal</h3>
+              <p className="text-slate-400 text-sm leading-relaxed mb-8 flex-1">
+                Stay connected with your child's academic journey. Monitor attendance, grades, and fee payments.
+              </p>
+              <div className="flex items-center gap-2 text-purple-400 font-semibold text-sm group-hover:gap-3 transition-all mt-auto">
+                Access Gateway <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
 
         </div>
-
-        {/* Right Content (Elsa AI) */}
-        <div className="xl:col-span-1 border-l border-border pl-0 xl:pl-6">
-           <div className="sticky top-6">
-             <AdminCopilot />
-           </div>
-        </div>
-
       </div>
     </div>
   );

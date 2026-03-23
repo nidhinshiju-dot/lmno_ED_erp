@@ -22,7 +22,7 @@ spring:
         - id: core-service
           uri: ${CORE_SERVICE_URL:http://localhost:8082}
           predicates:
-            - Path=/api/v1/students/**,/api/v1/staff/**,/api/v1/classes/**,/api/v1/sections/**,/api/v1/schools/**,/api/v1/assistant/**,/api/v1/timetable/**,/api/v1/teacher/**,/api/v1/subjects/**,/api/v1/attendance/**,/api/v1/exams/**,/api/v1/announcements/**,/api/v1/notifications/**,/api/v1/files/**,/api/v1/reports/**,/api/v1/school-management/**,/api/v1/class-subjects/**,/api/v1/class-subject-teachers/**,/api/v1/schedule/**,/api/v1/substitutions/**,/api/v1/teacher-availability/**,/api/v1/rooms/**
+            - Path=/api/v1/students/**,/api/v1/staff/**,/api/v1/classes/**,/api/v1/sections/**,/api/v1/schools/**,/api/v1/assistant/**,/api/v1/timetable/**,/api/v1/teacher/**,/api/v1/subjects/**,/api/v1/attendance/**,/api/v1/exams/**,/api/v1/announcements/**,/api/v1/notifications/**,/api/v1/files/**,/api/v1/reports/**,/api/v1/school-management/**,/api/v1/class-subjects/**,/api/v1/class-subject-teachers/**,/api/v1/schedule/**,/api/v1/substitutions/**,/api/v1/teacher-availability/**,/api/v1/rooms/**,/api/v1/credentials/**,/api/v1/whatsapp/**
 
         - id: lms-service
           uri: ${LMS_SERVICE_URL:http://localhost:8083}

@@ -1,0 +1,40 @@
+﻿    select
+        count(*) 
+    from
+        attendance_status_types ast1_0
+2026-03-22T20:23:37.414Z  WARN 1 --- [core-service] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-03-22T20:23:37.590Z DEBUG 1 --- [core-service] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : 164 mappings in 'requestMappingHandlerMapping'
+2026-03-22T20:23:37.675Z DEBUG 1 --- [core-service] [           main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**, /api/v1/files/download/**] in 'resourceHandlerMapping'
+2026-03-22T20:23:37.721Z DEBUG 1 --- [core-service] [           main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-03-22T20:23:37.752Z DEBUG 1 --- [core-service] [           main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 1 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-03-22T20:23:37.841Z  INFO 1 --- [core-service] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 8082 (http) with context path ''
+2026-03-22T20:23:37.851Z  INFO 1 --- [core-service] [           main] c.schoolerp.core.CoreServiceApplication  : Started CoreServiceApplication in 7.336 seconds (process running for 8.029)
+2026-03-22T20:24:01.922Z  INFO 1 --- [core-service] [nio-8082-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-03-22T20:24:01.922Z  INFO 1 --- [core-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-03-22T20:24:01.923Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Detected StandardServletMultipartResolver
+2026-03-22T20:24:01.923Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Detected AcceptHeaderLocaleResolver
+2026-03-22T20:24:01.923Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Detected FixedThemeResolver
+2026-03-22T20:24:01.924Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator@71e064b2
+2026-03-22T20:24:01.924Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Detected org.springframework.web.servlet.support.SessionFlashMapManager@47ba8e3c
+2026-03-22T20:24:01.925Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : enableLoggingRequestDetails='false': request parameters and headers will be masked to prevent unsafe logging of potentially sensitive data
+2026-03-22T20:24:01.925Z  INFO 1 --- [core-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 3 ms
+2026-03-22T20:24:01.930Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : POST "/api/v1/staff", parameters={}
+2026-03-22T20:24:01.937Z DEBUG 1 --- [core-service] [nio-8082-exec-1] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.schoolerp.core.controller.StaffController#createStaff(Staff, HttpServletRequest)
+2026-03-22T20:24:02.005Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.web.method.HandlerMethod             : Could not resolve parameter [0] in public com.schoolerp.core.entity.Staff com.schoolerp.core.controller.StaffController.createStaff(com.schoolerp.core.entity.Staff,jakarta.servlet.http.HttpServletRequest): JSON parse error: Unexpected end-of-input in VALUE_STRING
+2026-03-22T20:24:02.007Z  WARN 1 --- [core-service] [nio-8082-exec-1] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotReadableException: JSON parse error: Unexpected end-of-input in VALUE_STRING]
+2026-03-22T20:24:02.008Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Completed 400 BAD_REQUEST
+2026-03-22T20:24:02.013Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={}
+2026-03-22T20:24:02.015Z DEBUG 1 --- [core-service] [nio-8082-exec-1] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
+2026-03-22T20:24:02.025Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-03-22T20:24:02.027Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Mar 22 20:24:02 UTC 2026, status=400, error=Bad Request, path=/api/v1/staff}]
+2026-03-22T20:24:02.042Z DEBUG 1 --- [core-service] [nio-8082-exec-1] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 400
+2026-03-22T20:24:28.354Z DEBUG 1 --- [core-service] [nio-8082-exec-2] o.s.web.servlet.DispatcherServlet        : POST "/api/v1/staff", parameters={}
+2026-03-22T20:24:28.355Z DEBUG 1 --- [core-service] [nio-8082-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to com.schoolerp.core.controller.StaffController#createStaff(Staff, HttpServletRequest)
+2026-03-22T20:24:28.356Z DEBUG 1 --- [core-service] [nio-8082-exec-2] o.s.web.method.HandlerMethod             : Could not resolve parameter [0] in public com.schoolerp.core.entity.Staff com.schoolerp.core.controller.StaffController.createStaff(com.schoolerp.core.entity.Staff,jakarta.servlet.http.HttpServletRequest): JSON parse error: Unexpected end-of-input in VALUE_STRING
+2026-03-22T20:24:28.356Z  WARN 1 --- [core-service] [nio-8082-exec-2] .w.s.m.s.DefaultHandlerExceptionResolver : Resolved [org.springframework.http.converter.HttpMessageNotReadableException: JSON parse error: Unexpected end-of-input in VALUE_STRING]
+2026-03-22T20:24:28.357Z DEBUG 1 --- [core-service] [nio-8082-exec-2] o.s.web.servlet.DispatcherServlet        : Completed 400 BAD_REQUEST
+2026-03-22T20:24:28.357Z DEBUG 1 --- [core-service] [nio-8082-exec-2] o.s.web.servlet.DispatcherServlet        : "ERROR" dispatch for POST "/error", parameters={}
+2026-03-22T20:24:28.358Z DEBUG 1 --- [core-service] [nio-8082-exec-2] s.w.s.m.m.a.RequestMappingHandlerMapping : Mapped to org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController#error(HttpServletRequest)
+2026-03-22T20:24:28.359Z DEBUG 1 --- [core-service] [nio-8082-exec-2] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Using 'application/json', given [*/*] and supported [application/json, application/*+json]
+2026-03-22T20:24:28.359Z DEBUG 1 --- [core-service] [nio-8082-exec-2] o.s.w.s.m.m.a.HttpEntityMethodProcessor  : Writing [{timestamp=Sun Mar 22 20:24:28 UTC 2026, status=400, error=Bad Request, path=/api/v1/staff}]
+2026-03-22T20:24:28.360Z DEBUG 1 --- [core-service] [nio-8082-exec-2] o.s.web.servlet.DispatcherServlet        : Exiting from "ERROR" dispatch, status 400

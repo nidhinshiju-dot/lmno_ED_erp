@@ -16,8 +16,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        tenant_identifier_resolver: com.schoolerp.lms.config.tenant.TenantIdentifierResolver
-        multi_tenant_connection_provider: com.schoolerp.lms.config.tenant.TenantConnectionProvider
 
 anthropic:
   api:

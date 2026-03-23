@@ -7,8 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
@@ -20,6 +22,9 @@ public class StaffController {
 
     @Autowired
     private StaffRepository staffRepository;
+
+    @Autowired
+    private com.schoolerp.core.repository.ClassSubjectTeacherRepository classSubjectTeacherRepository;
 
     @GetMapping
     public List<Staff> getAllStaff() {
@@ -34,14 +39,34 @@ public class StaffController {
     }
 
     @PostMapping
-    public Staff createStaff(@Valid @RequestBody Staff staff) {
-        return staffService.createStaff(staff);
+    public Staff createStaff(@RequestBody Staff staff, HttpServletRequest request) {
+        String tenantId = extractTenantIdFromJwt(request);
+        return staffService.createStaff(staff, tenantId);
+    }
+
+    private String extractTenantIdFromJwt(HttpServletRequest request) {
+        try {
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+                String[] parts = token.split("\\.");
+                if (parts.length == 3) {
+                    String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+                    // Parse tenantId from JWT payload JSON
+                    if (payload.contains("\"tenantId\":")) {
+                        String val = payload.split("\"tenantId\":\"")[1].split("\"")[0];
+                        return val;
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return null;
     }
 
     /** B1/B6 — Activate or deactivate a staff/teacher account */
     @PatchMapping("/{id}/status")
     public ResponseEntity<Staff> toggleStatus(
-            @PathVariable String id, @Valid @RequestBody Map<String, String> body) {
+            @PathVariable("id") String id, @Valid @RequestBody Map<String, String> body) {
         return staffRepository.findById(id).map(staff -> {
             String newStatus = body.getOrDefault("status", staff.getStatus());
             staff.setStatus(newStatus); // ACTIVE, INACTIVE
@@ -52,7 +77,7 @@ public class StaffController {
     /** Edit full staff profile */
     @PutMapping("/{id}")
     public ResponseEntity<Staff> updateStaff(
-            @PathVariable String id, @Valid @RequestBody Staff body) {
+            @PathVariable("id") String id, @Valid @RequestBody Staff body) {
         return staffRepository.findById(id).map(staff -> {
             if (body.getName() != null)
                 staff.setName(body.getName());
@@ -70,13 +95,31 @@ public class StaffController {
                 staff.setStatus(body.getStatus());
             if (body.getSubjects() != null)
                 staff.setSubjects(body.getSubjects());
+            if (body.getTeacherType() != null)
+                staff.setTeacherType(body.getTeacherType());
+            if (body.getMaxPeriods() != null) {
+                // Calculate current workload to ensure we don't drop below it
+                int currentAssigned = classSubjectTeacherRepository.findByTeacherId(id).stream()
+                        .mapToInt(cs -> cs.getPeriodsPerWeek() != null ? cs.getPeriodsPerWeek() : 0)
+                        .sum();
+
+                if (body.getMaxPeriods() < currentAssigned) {
+                    throw new com.schoolerp.core.exception.DependencyConflictException(
+                            "Cannot reduce max workload (" + body.getMaxPeriods() + 
+                            ") below the currently assigned " + currentAssigned + " periods."
+                    );
+                }
+                staff.setMaxPeriods(body.getMaxPeriods());
+            }
+            if (body.getWorkloadRatio() != null)
+                staff.setWorkloadRatio(body.getWorkloadRatio());
             return ResponseEntity.ok(staffRepository.save(staff));
         }).orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        // Implementation stub added by QA Remediation
+    public ResponseEntity<Void> delete(@PathVariable("id") String id) {
+        staffService.deleteStaff(id);
         return ResponseEntity.noContent().build();
     }
 }

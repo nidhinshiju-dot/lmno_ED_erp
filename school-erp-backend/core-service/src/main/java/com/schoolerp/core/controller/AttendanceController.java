@@ -1,7 +1,9 @@
 package com.schoolerp.core.controller;
 
-import com.schoolerp.core.entity.Attendance;
-import com.schoolerp.core.repository.AttendanceRepository;
+import com.schoolerp.core.dto.AttendanceBatchRequestDto;
+import com.schoolerp.core.dto.AttendanceStudentResponseDto;
+import com.schoolerp.core.entity.AttendanceStatusType;
+import com.schoolerp.core.repository.AttendanceStatusTypeRepository;
 import com.schoolerp.core.service.AttendanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -9,10 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
-import jakarta.validation.Valid;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/attendance")
@@ -20,62 +19,46 @@ import jakarta.validation.Valid;
 public class AttendanceController {
 
     private final AttendanceService attendanceService;
-    private final AttendanceRepository attendanceRepository;
+    private final AttendanceStatusTypeRepository statusTypeRepository;
 
-    @GetMapping("/class/{classId}")
-    public ResponseEntity<List<Attendance>> getByClass(
-            @PathVariable String classId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return ResponseEntity.ok(attendanceService.getByClassAndDate(classId, date));
-    }
-
-    @GetMapping("/student/{studentId}")
-    public ResponseEntity<List<Attendance>> getByStudent(@PathVariable String studentId) {
-        return ResponseEntity.ok(attendanceService.getByStudentId(studentId));
-    }
-
-    @PostMapping
-    public ResponseEntity<List<Attendance>> markAttendance(@Valid @RequestBody List<Attendance> records) {
-        return ResponseEntity.ok(attendanceService.markAttendance(records));
+    /**
+     * Get active attendance mode (DAILY vs PERIOD)
+     */
+    @GetMapping("/mode")
+    public ResponseEntity<String> getMode() {
+        return ResponseEntity.ok(attendanceService.getAttendanceMode());
     }
 
     /**
-     * B9 — Edit an attendance record.
-     * Allows correcting a previously marked status or remarks.
+     * Get custom Status Types (Present, Absent, Leave)
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<Attendance> updateAttendance(
-            @PathVariable String id, @Valid @RequestBody Attendance body) {
-        return attendanceRepository.findById(id).map(a -> {
-            a.setStatus(body.getStatus());
-            a.setRemarks(body.getRemarks());
-            return ResponseEntity.ok(attendanceRepository.save(a));
-        }).orElse(ResponseEntity.notFound().build());
+    @GetMapping("/statuses")
+    public ResponseEntity<List<AttendanceStatusType>> getStatuses() {
+        return ResponseEntity.ok(statusTypeRepository.findAll());
     }
 
     /**
-     * B10 — Monthly attendance summary for a student.
-     * Returns a map of month (YYYY-MM) to counts: {PRESENT: N, ABSENT: N, LATE: N}
+     * Get dynamic Class roster augmented with attendance data for a given date
      */
-    @GetMapping("/student/{studentId}/monthly")
-    public ResponseEntity<Map<String, Map<String, Long>>> getMonthlyAttendance(
-            @PathVariable String studentId) {
-        List<Attendance> records = attendanceService.getByStudentId(studentId);
-
-        // Group by YYYY-MM then by status and count
-        Map<String, Map<String, Long>> summary = records.stream()
-                .collect(Collectors.groupingBy(
-                        a -> a.getDate().format(DateTimeFormatter.ofPattern("yyyy-MM")),
-                        TreeMap::new,
-                        Collectors.groupingBy(Attendance::getStatus, Collectors.counting())
-                ));
-
-        return ResponseEntity.ok(summary);
+    @GetMapping("/roster")
+    public ResponseEntity<List<AttendanceStudentResponseDto>> getClassRoster(
+            @RequestParam("classId") String classId,
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(value = "periodBlockId", required = false) String periodBlockId) {
+        
+        return ResponseEntity.ok(attendanceService.getClassRosterForAttendance(classId, date, periodBlockId));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
-        // Implementation stub added by QA Remediation
-        return ResponseEntity.noContent().build();
+    /**
+     * Submit Bulk/Batch Attendance for a Class/Period
+     */
+    @PostMapping("/batch")
+    public ResponseEntity<String> submitBatch(@RequestBody AttendanceBatchRequestDto request) {
+        try {
+            attendanceService.submitAttendanceBatch(request);
+            return ResponseEntity.ok("Attendance recorded successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

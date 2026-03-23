@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { StudentService, ClassService, StudentManagementService, fetchWithAuth, FileService } from "@/lib/api";
-import { Plus, Search, Loader2, Wand2, ArrowUpCircle, Filter, Upload, FileDown } from "lucide-react";
+import { Plus, Search, Loader2, Wand2, ArrowUpCircle, Filter, Upload, FileDown, Download } from "lucide-react";
 import Link from "next/link";
 import { BulkImportModal } from "@/components/BulkImportModal";
+import * as XLSX from "xlsx";
 
 interface Student {
     id: string;
@@ -186,6 +187,36 @@ export default function StudentsPage() {
         } finally { setPromoting(false); }
     };
 
+    const handleExportExcel = () => {
+        if (displayedStudents.length === 0) {
+            alert("No data available to export.");
+            return;
+        }
+
+        const exportData = displayedStudents.map(s => {
+            const studentClass = classes.find(c => c.id === s.classId);
+            const className = studentClass ? `${studentClass.name}${studentClass.branch ? ` (${studentClass.branch})` : ''}` : "N/A";
+            
+            return {
+                "Admission Number": s.admissionNumber,
+                "Student Name": s.name,
+                "Class": className,
+                "Date of Birth": s.dob || "N/A",
+                "Parent Contact": s.parentContact || "N/A"
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+        
+        const fileName = selectedClass 
+            ? `Students_Class_${classes.find(c => c.id === selectedClass)?.name || "Filtered"}_${new Date().toISOString().split("T")[0]}.xlsx`
+            : `Students_All_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+        XLSX.writeFile(workbook, fileName);
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -204,7 +235,13 @@ export default function StudentsPage() {
                         onClick={() => setIsBulkImportOpen(true)}
                         className="border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium text-sm"
                     >
-                        <FileDown className="w-4 h-4" /> Bulk Import
+                        <Upload className="w-4 h-4" /> Bulk Import
+                    </button>
+                    <button
+                        onClick={handleExportExcel}
+                        className="border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium text-sm"
+                    >
+                        <Download className="w-4 h-4" /> Export Excel
                     </button>
                     <button
                         onClick={() => setIsModalOpen(true)}

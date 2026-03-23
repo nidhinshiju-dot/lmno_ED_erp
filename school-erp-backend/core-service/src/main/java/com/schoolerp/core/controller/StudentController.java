@@ -83,7 +83,7 @@ public class StudentController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") String id) {
-        // Implementation stub added by QA Remediation
+        studentService.deleteStudent(id);
         return ResponseEntity.noContent().build();
     }
 }

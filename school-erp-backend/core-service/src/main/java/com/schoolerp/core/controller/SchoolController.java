@@ -1,5 +1,6 @@
 package com.schoolerp.core.controller;
 
+import com.schoolerp.core.dto.SchoolCreationResponse;
 import com.schoolerp.core.entity.School;
 import com.schoolerp.core.service.SchoolService;
 import lombok.RequiredArgsConstructor;
@@ -22,12 +23,13 @@ public class SchoolController {
     }
 
     @PostMapping
-    public ResponseEntity<School> createSchool(@Valid @RequestBody School school) {
+    public ResponseEntity<SchoolCreationResponse> createSchool(@Valid @RequestBody School school) {
         return ResponseEntity.ok(schoolService.createSchool(school));
     }
 
+
     @PatchMapping("/{id}/toggle")
-    public ResponseEntity<School> toggleStatus(@PathVariable String id) {
+    public ResponseEntity<School> toggleStatus(@PathVariable("id") String id) {
         return ResponseEntity.ok(schoolService.toggleStatus(id));
     }
 

@@ -18,7 +18,7 @@ public class Staff {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id")
     private String userId;
 
     @Column(nullable = false)
@@ -34,6 +34,8 @@ public class Staff {
     private String role;
 
     private String email;
+
+    @Column(nullable = false, unique = true)
     private String phone;
 
     @Column(name = "employee_id", unique = true)
@@ -41,6 +43,31 @@ public class Staff {
 
     /** B1/B6 — Account activation status: ACTIVE, INACTIVE */
     private String status;
+
+    private String dob;
+
+    @Column(name = "join_date")
+    private String joinDate;
+
+    @Column(name = "highest_qualification")
+    private String highestQualification;
+
+    @Column(columnDefinition = "TEXT")
+    private String address;
+
+    private String gender;
+
+    /** FULL_TIME, PART_TIME */
+    @Column(name = "teacher_type")
+    private String teacherType = "FULL_TIME";
+
+    /** Maximum weekly periods */
+    @Column(name = "max_periods")
+    private Integer maxPeriods = 30;
+
+    /** Workload ratio (e.g. 1.0 for full-time) */
+    @Column(name = "workload_ratio")
+    private Double workloadRatio = 1.0;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "staff_subjects", joinColumns = @JoinColumn(name = "staff_id"))

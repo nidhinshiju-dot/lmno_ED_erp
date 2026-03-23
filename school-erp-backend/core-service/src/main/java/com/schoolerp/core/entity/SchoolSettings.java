@@ -55,6 +55,10 @@ public class SchoolSettings {
     @Column(name = "primary_color")
     private String primaryColor;
 
+    // Attendance Module
+    @Column(name = "attendance_mode")
+    private String attendanceMode = "DAILY"; // DAILY or PERIOD
+
     @Column(name = "tenant_id", unique = true)
     private String tenantId; // One settings record per school
 }

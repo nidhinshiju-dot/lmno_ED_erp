@@ -39,6 +39,11 @@ public class ExamController {
         return ResponseEntity.ok(examService.getByClassId(classId));
     }
 
+    @GetMapping("/teacher/{teacherId}")
+    public ResponseEntity<List<Exam>> getByTeacher(@PathVariable String teacherId) {
+        return ResponseEntity.ok(examService.getByTeacherId(teacherId));
+    }
+
     @PostMapping
     public ResponseEntity<Exam> create(@Valid @RequestBody Exam exam) {
         return ResponseEntity.ok(examService.create(exam));

@@ -1,9 +1,14 @@
 package com.schoolerp.core.service;
 
 import com.schoolerp.core.entity.Staff;
+import com.schoolerp.core.entity.SchoolClass;
+import com.schoolerp.core.entity.ClassSubjectTeacher;
 import com.schoolerp.core.repository.StaffRepository;
+import com.schoolerp.core.repository.SchoolClassRepository;
+import com.schoolerp.core.repository.ClassSubjectTeacherRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,15 +19,45 @@ public class StaffService {
     @Autowired
     private StaffRepository staffRepository;
 
+    @Autowired
+    private SchoolClassRepository schoolClassRepository;
+
+    @Autowired
+    private ClassSubjectTeacherRepository classSubjectTeacherRepository;
+
+    @Autowired
+    private CredentialsService credentialsService;
+
     public List<Staff> getAllStaff() {
-        return staffRepository.findAll();
+        return staffRepository.findByStatusNot("INACTIVE");
     }
 
     public Optional<Staff> getStaffById(String id) {
         return staffRepository.findById(id);
     }
 
-    public Staff createStaff(Staff staff) {
-        return staffRepository.save(staff);
+    public Staff createStaff(Staff staff, String tenantId) {
+        Staff savedStaff = staffRepository.save(staff);
+        credentialsService.createStaffCredential(savedStaff, tenantId);
+        return savedStaff;
+    }
+
+    @Transactional
+    public void deleteStaff(String id) {
+        // 1. Remove this staff from being a class teacher
+        schoolClassRepository.findByClassTeacherId(id).ifPresent(sc -> {
+            sc.setClassTeacherId(null);
+            schoolClassRepository.save(sc);
+        });
+
+        // 2. Delete all subject assignments for this teacher
+        List<ClassSubjectTeacher> subjectAssignments = classSubjectTeacherRepository.findByTeacherId(id);
+        classSubjectTeacherRepository.deleteAll(subjectAssignments);
+
+        // 3. Mark the staff member as INACTIVE instead of hard deleting
+        staffRepository.findById(id).ifPresent(staff -> {
+            staff.setStatus("INACTIVE");
+            staffRepository.save(staff);
+        });
     }
 }
