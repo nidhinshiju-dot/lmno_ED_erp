@@ -29,8 +29,6 @@ spring:
     properties:
       hibernate:
         format_sql: false
-        tenant_identifier_resolver: com.schoolerp.core.config.tenant.TenantIdentifierResolver
-        multi_tenant_connection_provider: com.schoolerp.core.config.tenant.TenantConnectionProvider
 
   mail:
     host: ${MAIL_HOST}
