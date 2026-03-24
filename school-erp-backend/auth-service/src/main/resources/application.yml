@@ -1,21 +1,12 @@
 server:
-  port: 8083
+  port: ${PORT:8080}
 
 spring:
   application:
     name: auth-service
-  datasource:
-    url: jdbc:postgresql://localhost:5432/school_erp_db
-    username: postgres
-    password: password
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:prod}
 
 jwt:
-  secret: mysupersecretkeythatisverylongandsecure
-  expiration: 86400000 # 24 hours
+  secret: ${JWT_SECRET:mysupersecretkeythatisverylongandsecure}
+  expiration: ${JWT_EXPIRATION:86400000}
