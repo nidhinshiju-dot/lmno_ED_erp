@@ -3,19 +3,22 @@
 # Activated via: SPRING_PROFILES_ACTIVE=prod
 # ══════════════════════════════════════════════
 server:
-  port: 8082
+  port: ${PORT:8080}
 
 spring:
   application:
     name: core-service
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    # Google Cloud SQL TCP/Socket connection setup
+    url: jdbc:postgresql:///${DB_NAME}?cloudSqlInstance=${CLOUD_SQL_INSTANCE}&socketFactory=com.google.cloud.sql.postgres.SocketFactory
+    username: ${DB_USER}       # Injected via Cloud Run Secret Manager
+    password: ${DB_PASSWORD}   # Injected via Cloud Run Secret Manager
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
+      maximum-pool-size: 10
+      minimum-idle: 2
+      # Critical for Cloud Run: Prevents service start failure if DB is initially unavailable
+      initialization-fail-timeout: -1 
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
@@ -40,6 +43,7 @@ spring:
 
 logging:
   level:
+    root: INFO
     com.schoolerp: INFO
     org.springframework.web: WARN
     org.hibernate: WARN
