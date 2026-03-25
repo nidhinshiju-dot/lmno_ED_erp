@@ -21,7 +21,7 @@ interface School {
     createdAt?: string;
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+const API = process.env.NEXT_PUBLIC_API_URL || "https://api-gateway-249177610154.asia-south1.run.app/api/v1";
 
 export default function SchoolProfilePage() {
     const params = useParams();

@@ -46,7 +46,7 @@ export default function OnboardSchoolPage() {
     
     try {
       // Pointing to the UAT API Gateway
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api-gateway-249177610154.asia-south1.run.app/api/v1";
       const response = await fetch(`${API_URL}/schools`, {
         method: "POST",
         headers: {

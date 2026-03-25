@@ -19,7 +19,7 @@ export default function AiInsightsPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch("http://localhost:8082/api/v1/ai/chat", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://api-gateway-249177610154.asia-south1.run.app/api/v1"}/ai/chat`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
