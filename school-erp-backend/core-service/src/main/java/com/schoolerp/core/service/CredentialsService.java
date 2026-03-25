@@ -59,6 +59,8 @@ public class CredentialsService {
                 staffRepository.save(s);
                 log.info("Created auth user for staff {} with username: {}", s.getName(), generatedEmail);
                 return true;
+            } else {
+                throw new RuntimeException("Failed to provision auth user for staff. Creation aborted.");
             }
         }
         return false;
@@ -112,6 +114,7 @@ public class CredentialsService {
             HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
 
             ResponseEntity<Map> response = restTemplate.exchange(AUTH_PROVISION_URL, HttpMethod.POST, request, Map.class);
+            log.info("Provision request - email: {}, tenantId: {}, response status: {}", email, tenantId, response.getStatusCode());
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 log.info("User {} provisioned successfully in Auth-Service with role {}", email, role);

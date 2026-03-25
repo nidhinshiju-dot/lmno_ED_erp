@@ -451,7 +451,13 @@ export default function StaffProfilePage({ params }: { params: Promise<{ id: str
                     </div>
 
                     {/* Password Reset Card */}
-                    <PasswordResetCard username={staff.email} entityId={id} phone={staff.phone} />
+                    {staff.userId ? (
+                        <PasswordResetCard username={staff.email} entityId={id} phone={staff.phone} />
+                    ) : (
+                        <div className="bg-slate-50 dark:bg-zinc-800/50 border border-dashed border-slate-300 dark:border-zinc-700 rounded-2xl p-6 text-center">
+                            <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">No login account has been provisioned for this staff member.</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Right column - Employment Details */}

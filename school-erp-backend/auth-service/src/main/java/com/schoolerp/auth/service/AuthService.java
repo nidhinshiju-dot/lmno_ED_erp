@@ -81,7 +81,7 @@ public class AuthService {
     /** Generate a time-limited reset token (valid for 24h). */
     public String generateResetToken(String email) {
         userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found: " + email));
+                .orElseThrow(() -> new IllegalArgumentException("No login account exists for email"));
         long expiryMs = System.currentTimeMillis() + 86_400_000L; // 24h
         String payload = email + "|" + expiryMs;
         return java.util.Base64.getUrlEncoder().withoutPadding()

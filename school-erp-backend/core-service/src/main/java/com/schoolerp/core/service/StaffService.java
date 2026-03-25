@@ -43,6 +43,19 @@ public class StaffService {
     }
 
     @Transactional
+    public void provisionLoginForStaff(String staffId) {
+        Staff staff = staffRepository.findById(staffId)
+                .orElseThrow(() -> new RuntimeException("Staff member not found."));
+        if (staff.getUserId() != null && !staff.getUserId().isEmpty()) {
+            throw new RuntimeException("Staff member already has an auth account provisioned.");
+        }
+        boolean provisioned = credentialsService.createStaffCredential(staff);
+        if (!provisioned) {
+            throw new RuntimeException("Failed to provision auth account.");
+        }
+    }
+
+    @Transactional
     public void deleteStaff(String id) {
         // 1. Remove this staff from being a class teacher
         schoolClassRepository.findByClassTeacherId(id).ifPresent(sc -> {

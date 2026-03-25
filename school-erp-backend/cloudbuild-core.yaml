@@ -1,0 +1,18 @@
+steps:
+  # Build the container image using the root Dockerfile
+  - name: 'gcr.io/cloud-builders/docker'
+    args: 
+      - 'build'
+      - '-t'
+      - '$_IMAGE_NAME'
+      - '--build-arg'
+      - 'SERVICE=core-service'
+      - '--no-cache'
+      - '.'
+
+  # Push the container image to Artifact Registry or Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$_IMAGE_NAME']
+
+images:
+  - '$_IMAGE_NAME'

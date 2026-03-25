@@ -44,6 +44,16 @@ public class StaffController {
         return staffService.createStaff(staff, tenantId);
     }
 
+    @PostMapping("/{id}/provision-login")
+    public ResponseEntity<?> provisionLogin(@PathVariable("id") String id) {
+        try {
+            staffService.provisionLoginForStaff(id);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     private String extractTenantIdFromJwt(HttpServletRequest request) {
         try {
             String authHeader = request.getHeader("Authorization");

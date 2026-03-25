@@ -89,8 +89,10 @@ public class AuthController {
         try {
             String token = authService.generateResetToken(request.getEmail());
             return ResponseEntity.ok(java.util.Map.of("token", token));
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Internal server error: " + e.getMessage());
         }
     }
 
