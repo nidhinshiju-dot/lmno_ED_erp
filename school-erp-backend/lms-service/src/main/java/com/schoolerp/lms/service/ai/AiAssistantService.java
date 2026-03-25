@@ -22,7 +22,7 @@ public class AiAssistantService {
 
     private final AnthropicService anthropicService;
     private final AiToolRegistry toolRegistry;
-    private final DocumentProcessorService documentProcessorService;
+    private final java.util.Optional<DocumentProcessorService> documentProcessorServiceOptional;
 
     private static final String MODEL_NAME = "claude-3-haiku-20240307";
 
@@ -35,8 +35,8 @@ public class AiAssistantService {
         // If Student, attach RAG Context to System Prompt based on the course they are asking about
         // For prototype, assuming the query has some course context or we scan ALL their courses.
         // We will just fetch a generic context for now
-        if ("STUDENT".equalsIgnoreCase(request.getUserRole())) {
-             String context = documentProcessorService.retrieveContextForQuery(request.getQuery(), "course-123");
+        if ("STUDENT".equalsIgnoreCase(request.getUserRole()) && documentProcessorServiceOptional.isPresent()) {
+             String context = documentProcessorServiceOptional.get().retrieveContextForQuery(request.getQuery(), "course-123");
              finalSystemPrompt += "\n\nUse the following course document context to answer the student's question:\n" + context;
         }
 

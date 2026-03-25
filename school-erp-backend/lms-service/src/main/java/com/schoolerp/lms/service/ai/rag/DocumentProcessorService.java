@@ -23,6 +23,7 @@ import java.io.InputStream;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name="ai.enabled", havingValue="true", matchIfMissing=false)
 public class DocumentProcessorService {
 
     // Ideally, injected pg vector. Using in memory for simplicity of prototyping.

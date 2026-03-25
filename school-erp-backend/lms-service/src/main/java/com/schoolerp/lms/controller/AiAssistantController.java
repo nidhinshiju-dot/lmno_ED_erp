@@ -18,7 +18,7 @@ import jakarta.validation.Valid;
 public class AiAssistantController {
 
     private final AiAssistantService aiAssistantService;
-    private final DocumentProcessorService documentProcessorService;
+    private final java.util.Optional<DocumentProcessorService> documentProcessorServiceOptional;
 
     @PostMapping("/chat")
     public ResponseEntity<AiChatResponse> chat(@Valid @RequestBody AiChatRequest request) {
@@ -32,8 +32,13 @@ public class AiAssistantController {
             @RequestParam("teacherId") String teacherId,
             @RequestParam("courseId") String courseId) {
         
+        if (documentProcessorServiceOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of("error", "AI document processing is currently disabled on this server."));
+        }
+        
         try {
-            documentProcessorService.processTeacherUpload(file, teacherId, courseId);
+            documentProcessorServiceOptional.get().processTeacherUpload(file, teacherId, courseId);
             return ResponseEntity.ok(Map.of("message", "Document processed and stored in vector database successfully."));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
