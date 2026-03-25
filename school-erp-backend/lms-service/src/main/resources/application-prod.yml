@@ -1,24 +1,43 @@
-# LMS Service — Production Profile
+# ══════════════════════════════════════════════
+# LMS Service — Production Spring Profile
+# Activated via: SPRING_PROFILES_ACTIVE=prod
+# ══════════════════════════════════════════════
 server:
-  port: 8083
+  port: ${PORT:8080}
+
 spring:
   application:
     name: lms-service
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    # Google Cloud SQL TCP/Socket connection setup
+    url: jdbc:postgresql:///${DB_NAME}?cloudSqlInstance=${CLOUD_SQL_INSTANCE}&socketFactory=com.google.cloud.sql.postgres.SocketFactory
+    username: ${DB_USER}       # Injected via Cloud Run Secret Manager
+    password: ${DB_PASSWORD}   # Injected via Cloud Run Secret Manager
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
+      minimum-idle: 2
+      # Critical for Cloud Run: Prevents service start failure if DB is initially unavailable
+      initialization-fail-timeout: -1 
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update      # UAT/Prod schema generation enabled for Cloud SQL deployment
     show-sql: false
     properties:
       hibernate:
-        tenant_identifier_resolver: com.schoolerp.lms.config.tenant.TenantIdentifierResolver
-        multi_tenant_connection_provider: com.schoolerp.lms.config.tenant.TenantConnectionProvider
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+anthropic:
+  api:
+    key: ${ANTHROPIC_API_KEY}
+
 logging:
   level:
+    root: INFO
     com.schoolerp: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN
