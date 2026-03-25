@@ -33,7 +33,7 @@ spring:
 
 anthropic:
   api:
-    key: ${ANTHROPIC_API_KEY}
+    key: ${ANTHROPIC_API_KEY:}
 
 logging:
   level:
