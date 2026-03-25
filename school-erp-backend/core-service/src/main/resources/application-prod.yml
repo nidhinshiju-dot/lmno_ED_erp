@@ -24,7 +24,7 @@ spring:
       max-lifetime: 1800000
   jpa:
     hibernate:
-      ddl-auto: validate      # PROD: never auto-alter — fail fast if schema is wrong
+      ddl-auto: update      # PROD: never auto-alter — fail fast if schema is wrong
     show-sql: false
     properties:
       hibernate:
