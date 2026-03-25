@@ -234,7 +234,7 @@ function StudentResetCard({ studentId, username }: { studentId: string; username
                             {/* Avatar */}
                             <div className="absolute -top-12 left-6 ring-4 ring-card bg-muted w-24 h-24 rounded-full flex items-center justify-center overflow-hidden shadow-md">
                                 {student.photoUrl ? (
-                                    <img src={student.photoUrl.startsWith("http") ? student.photoUrl : `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8085"}${student.photoUrl}`} alt="Profile" className="w-full h-full object-cover" />
+                                    <img src={student.photoUrl.startsWith("http") ? student.photoUrl : `${process.env.NEXT_PUBLIC_API_URL || "https://api-gateway-249177610154.asia-south1.run.app/api/v1"}${student.photoUrl}`} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
                                     <User className="w-10 h-10 text-muted-foreground/50" />
                                 )}

@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api-gateway-249177610154.asia-south1.run.app/api/v1";
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const token = localStorage.getItem("erp_token");
@@ -169,7 +169,7 @@ export interface AttendanceBatchRequestDto {
 export const AttendanceService = {
     getMode: async (): Promise<string> => {
         const token = localStorage.getItem("erp_token");
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"}/attendance/mode`, {
+        const res = await fetch(`${API_BASE_URL}/attendance/mode`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         if (!res.ok) throw new Error("Failed to fetch mode");
