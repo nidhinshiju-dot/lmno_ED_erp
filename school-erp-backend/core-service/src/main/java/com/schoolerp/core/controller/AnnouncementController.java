@@ -27,6 +27,16 @@ public class AnnouncementController {
         return ResponseEntity.ok(announcementService.getByScope(scope));
     }
 
+    @GetMapping("/student")
+    public ResponseEntity<List<Announcement>> getForStudent(@RequestHeader(value="X-Class-ID", required=false) String classId) {
+        return ResponseEntity.ok(announcementService.getForStudent(classId));
+    }
+
+    @GetMapping("/teacher")
+    public ResponseEntity<List<Announcement>> getForTeacher(@RequestHeader(value="X-Staff-ID", required=false) String staffId) {
+        return ResponseEntity.ok(announcementService.getForTeacher(staffId));
+    }
+
     @Autowired
     private com.schoolerp.core.service.PushNotificationService pushNotificationService;
 

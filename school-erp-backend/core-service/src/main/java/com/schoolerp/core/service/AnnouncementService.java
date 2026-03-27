@@ -21,6 +21,14 @@ public class AnnouncementService {
         return announcementRepository.findByScopeAndActiveTrueOrderByCreatedAtDesc(scope);
     }
 
+    public List<Announcement> getForStudent(String classId) {
+        return announcementRepository.findForStudent(classId);
+    }
+
+    public List<Announcement> getForTeacher(String staffId) {
+        return announcementRepository.findForTeacher(staffId);
+    }
+
     public Announcement create(Announcement announcement) {
         return announcementRepository.save(announcement);
     }
