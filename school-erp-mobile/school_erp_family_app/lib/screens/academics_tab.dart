@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:school_erp_mobile_core/school_erp_mobile_core.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
+import 'package:intl/intl.dart';
+import 'student_material_detail_screen.dart';
 
 class AcademicsTab extends StatefulWidget {
   const AcademicsTab({super.key});
@@ -279,7 +281,7 @@ class _AcademicsTabState extends State<AcademicsTab> {
                                       context: context,
                                       isScrollControlled: true,
                                       backgroundColor: Colors.transparent,
-                                      builder: (ctx) => _CourseMaterialsSheet(courseId: course['id'], courseName: course['title']),
+                                      builder: (ctx) => CourseMaterialsSheet(courseId: course['id'], courseName: course['title']),
                                     );
                                   },
                                   child: const Text('OPEN', style: TextStyle(fontSize: 12)),
@@ -342,104 +344,5 @@ class _AcademicsTabState extends State<AcademicsTab> {
   }
 }
 
-class _CourseMaterialsSheet extends StatefulWidget {
-  final String courseId;
-  final String? courseName;
 
-  const _CourseMaterialsSheet({required this.courseId, this.courseName});
-
-  @override
-  State<_CourseMaterialsSheet> createState() => _CourseMaterialsSheetState();
-}
-
-class _CourseMaterialsSheetState extends State<_CourseMaterialsSheet> {
-  bool _isLoading = true;
-  List<Map<String, dynamic>> _materials = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMaterials();
-  }
-
-  Future<void> _loadMaterials() async {
-    try {
-      final res = await ApiClient.get(context, '/courses/${widget.courseId}/materials');
-      if (res.statusCode == 200) {
-        if (mounted) setState(() {
-          _materials = (json.decode(res.body) as List).cast<Map<String, dynamic>>();
-          _isLoading = false;
-        });
-      } else {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(color: ClayTheme.background, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      padding: const EdgeInsets.all(24),
-      height: MediaQuery.of(context).size.height * 0.7,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('${widget.courseName ?? 'Course'} Materials', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: ClayTheme.textDark)),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _isLoading 
-              ? const Center(child: CircularProgressIndicator())
-              : _materials.isEmpty 
-                  ? const ClayEmptyState(title: "Empty", message: "Teacher hasn't uploaded any materials.", icon: Icons.folder_open)
-                  : ListView.builder(
-                      itemCount: _materials.length,
-                      itemBuilder: (ctx, idx) {
-                        final m = _materials[idx];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: ClayContainer(
-                            depth: true,
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.insert_drive_file, color: ClayTheme.primary),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(m['title'] ?? 'Document', style: const TextStyle(fontWeight: FontWeight.bold, color: ClayTheme.textDark)),
-                                      Text(m['fileName'] ?? '', style: const TextStyle(fontSize: 12, color: ClayTheme.textLight), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.download, color: ClayTheme.primary),
-                                  onPressed: () async {
-                                    try {
-                                      final urlRes = await ApiClient.get(context, '/courses/${widget.courseId}/materials/${m['id']}/download');
-                                      if (urlRes.statusCode == 200) {
-                                        final url = json.decode(urlRes.body)['url'];
-                                        if (url != null && context.mounted) {
-                                          await PdfViewerService.launchRemotePdf(context, url);
-                                        }
-                                      }
-                                    } catch (_) {}
-                                  },
-                                )
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:school_erp_mobile_core/school_erp_mobile_core.dart';
 import 'dart:convert';
+import '../widgets/materials_sheet.dart';
 
 class ChildTab extends StatefulWidget {
   const ChildTab({super.key});
@@ -198,7 +199,12 @@ class _ChildTabState extends State<ChildTab> {
                        ),
                        ClayButton(
                          onPressed: () {
-                           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Materials linked above in Academics section for demo.')));
+                           showModalBottomSheet(
+                             context: context,
+                             isScrollControlled: true,
+                             backgroundColor: Colors.transparent,
+                             builder: (ctx) => CourseMaterialsSheet(courseId: course['id'], courseName: course['title']),
+                           );
                          },
                          child: const Text('OPEN', style: TextStyle(fontSize: 12)),
                        ),

@@ -89,7 +89,51 @@ public class CourseMaterialService {
         return storageService.getDownloadUrl(m.getStorageKey());
     }
 
-    public void deleteMaterial(String courseId, String materialId, String role, String staffId) {
+    public CourseMaterialResponse getMaterialById(String courseId, String materialId) {
+        String tenantId = RequestContext.getContext() != null ? RequestContext.getContext().getTenantId() : "public";
+        CourseMaterial material = repository.findByIdAndTenantIdAndCourseId(materialId, tenantId, courseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Material not found"));
+        return toDto(material);
+    }
+
+    public CourseMaterialResponse updateMaterial(String courseId, String materialId, MultipartFile file, String title, String description, String role, String staffId) {
+        requireCourseOwnership(courseId, role, staffId);
+        String tenantId = RequestContext.getContext() != null ? RequestContext.getContext().getTenantId() : "public";
+
+        CourseMaterial material = repository.findByIdAndTenantIdAndCourseId(materialId, tenantId, courseId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Material not found"));
+
+        if (title != null && !title.isEmpty()) {
+            material.setTitle(title);
+        }
+        if (description != null) {
+            material.setDescription(description);
+        }
+
+        if (file != null && !file.isEmpty()) {
+            validateFile(file);
+            try {
+                // Delete old file
+                try {
+                    storageService.delete(material.getStorageKey());
+                } catch(Exception e) {
+                    // Ignore orphan deletion errors
+                }
+                
+                String newStorageKey = storageService.upload(file, "material-" + courseId + "-" + UUID.randomUUID());
+                material.setStorageKey(newStorageKey);
+                material.setFileName(file.getOriginalFilename());
+                material.setMimeType(file.getContentType());
+                material.setFileSize(file.getSize());
+            } catch (Exception e) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to update file", e);
+            }
+        }
+
+        return toDto(repository.save(material));
+    }
+
+    public void archiveMaterial(String courseId, String materialId, String role, String staffId) {
         requireCourseOwnership(courseId, role, staffId);
         String tenantId = RequestContext.getContext() != null ? RequestContext.getContext().getTenantId() : "public";
         

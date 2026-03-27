@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:school_erp_mobile_core/school_erp_mobile_core.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'material_detail_screen.dart';
 
 class MaterialsManagementScreen extends StatefulWidget {
   final String courseId;
@@ -127,41 +128,7 @@ class _MaterialsManagementScreenState extends State<MaterialsManagementScreen> {
     }
   }
 
-  Future<void> _deleteMaterial(String id) async {
-    try {
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final res = await ApiClient.delete(
-        context, 
-        '/courses/${widget.courseId}/materials/$id',
-        headers: {
-          'X-Staff-ID': auth.user?['staffId'] ?? '',
-          'X-User-Role': 'TEACHER',
-        }
-      );
-      if (res.statusCode == 204) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Material archived.'), backgroundColor: ClayTheme.success));
-        _loadMaterials();
-      }
-    } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to archive.'), backgroundColor: ClayTheme.danger));
-    }
-  }
-
-  Future<void> _openMaterial(String materialId) async {
-    try {
-      final res = await ApiClient.get(context, '/courses/${widget.courseId}/materials/$materialId/download');
-      if (res.statusCode == 200) {
-        final url = json.decode(res.body)['url'];
-        if (url != null && mounted) {
-           await PdfViewerService.launchRemotePdf(context, url);
-        }
-      } else {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to open material.'), backgroundColor: ClayTheme.danger));
-      }
-    } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Network error.'), backgroundColor: ClayTheme.danger));
-    }
-  }
+ 
 
   @override
   Widget build(BuildContext context) {
@@ -203,40 +170,33 @@ class _MaterialsManagementScreenState extends State<MaterialsManagementScreen> {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: ClayCard(
                         padding: const EdgeInsets.all(16),
-                        child: Column(
+                        onTap: () async {
+                           final refreshed = await Navigator.push(context, MaterialPageRoute(builder: (_) => MaterialDetailScreen(
+                             courseId: widget.courseId,
+                             materialId: m['id'],
+                             initialTitle: m['title'] ?? 'Document',
+                           )));
+                           if (refreshed == true && mounted) {
+                             _loadMaterials();
+                           }
+                        },
+                        child: Row(
                           children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.insert_drive_file, color: ClayTheme.primary, size: 36),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(m['title'] ?? 'Document', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: ClayTheme.textDark)),
-                                      const SizedBox(height: 4),
-                                      Text(m['fileName'] ?? '', style: const TextStyle(color: ClayTheme.textLight, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                      const SizedBox(height: 2),
-                                      Text(dateStr, style: const TextStyle(color: Colors.grey, fontSize: 10)),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                            const Icon(Icons.insert_drive_file, color: ClayTheme.primary, size: 36),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(m['title'] ?? 'Document', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: ClayTheme.textDark)),
+                                  const SizedBox(height: 4),
+                                  Text(m['fileName'] ?? '', style: const TextStyle(color: ClayTheme.textLight, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  const SizedBox(height: 4),
+                                  Text(dateStr, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: ClayTheme.danger),
-                                  onPressed: () => _deleteMaterial(m['id']),
-                                ),
-                                ClayButton(
-                                  onPressed: () => _openMaterial(m['id']),
-                                  child: const Text('OPEN', style: TextStyle(fontSize: 12)),
-                                ),
-                              ],
-                            )
+                            const Icon(Icons.arrow_forward_ios, color: ClayTheme.primary, size: 16),
                           ],
                         ),
                       ),

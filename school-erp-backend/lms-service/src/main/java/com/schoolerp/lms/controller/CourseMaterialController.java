@@ -43,14 +43,46 @@ public class CourseMaterialController {
         return ResponseEntity.ok(Map.of("url", url));
     }
 
-    @DeleteMapping("/{materialId}")
-    public ResponseEntity<Void> deleteMaterial(
+    @GetMapping("/{materialId}")
+    public ResponseEntity<CourseMaterialResponse> getMaterial(
+            @PathVariable String courseId,
+            @PathVariable String materialId) {
+        return ResponseEntity.ok(service.getMaterialById(courseId, materialId));
+    }
+
+    @PutMapping("/{materialId}")
+    public ResponseEntity<CourseMaterialResponse> updateMaterial(
+            @PathVariable String courseId,
+            @PathVariable String materialId,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestHeader(value = "X-User-Role", required = false, defaultValue = "STUDENT") String role,
+            @RequestHeader(value = "X-Staff-ID", required = false) String staffId) {
+
+        return ResponseEntity.ok(service.updateMaterial(courseId, materialId, file, title, description, role, staffId));
+    }
+
+    @PatchMapping("/{materialId}/archive")
+    public ResponseEntity<Void> archiveMaterialCanonical(
             @PathVariable String courseId,
             @PathVariable String materialId,
             @RequestHeader(value = "X-User-Role", required = false, defaultValue = "STUDENT") String role,
             @RequestHeader(value = "X-Staff-ID", required = false) String staffId) {
 
-        service.deleteMaterial(courseId, materialId, role, staffId);
+        service.archiveMaterial(courseId, materialId, role, staffId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Deprecated
+    @DeleteMapping("/{materialId}")
+    public ResponseEntity<Void> deleteMaterialDeprecatedAlias(
+            @PathVariable String courseId,
+            @PathVariable String materialId,
+            @RequestHeader(value = "X-User-Role", required = false, defaultValue = "STUDENT") String role,
+            @RequestHeader(value = "X-Staff-ID", required = false) String staffId) {
+
+        service.archiveMaterial(courseId, materialId, role, staffId);
         return ResponseEntity.noContent().build();
     }
 }
