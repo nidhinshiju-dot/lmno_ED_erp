@@ -10,4 +10,5 @@ import java.util.List;
 public interface InvoiceRepository extends JpaRepository<Invoice, String> {
     List<Invoice> findByStudentId(String studentId);
     List<Invoice> findByStatus(Invoice.InvoiceStatus status);
+    List<Invoice> findByStudentIdAndStatus(String studentId, Invoice.InvoiceStatus status);
 }

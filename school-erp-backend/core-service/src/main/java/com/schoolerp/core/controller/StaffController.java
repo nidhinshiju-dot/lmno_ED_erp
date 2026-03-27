@@ -38,6 +38,13 @@ public class StaffController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<Staff> getStaffByUserId(@PathVariable("userId") String userId) {
+        return staffRepository.findByUserId(userId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public Staff createStaff(@RequestBody Staff staff, HttpServletRequest request) {
         String tenantId = extractTenantIdFromJwt(request);

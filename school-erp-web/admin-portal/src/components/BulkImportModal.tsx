@@ -136,7 +136,6 @@ export function BulkImportModal({ classes, onClose, onImportSuccess }: BulkImpor
                 guardianRelation: row.guardianRelation,
                 classId: selectedClass,
                 admissionNumber: row.admissionNumber || generateAdmNo(),
-                userId: `u-${Math.random().toString(36).substring(7)}`,
                 countryCode: "+91",
             };
             try {

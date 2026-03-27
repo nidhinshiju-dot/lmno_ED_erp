@@ -42,6 +42,12 @@
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
+        <!-- Database Migrations -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+
         <!-- Cloud SQL & Robust Resilience for Cloud Run -->
         <dependency>
             <groupId>com.google.cloud.sql</groupId>

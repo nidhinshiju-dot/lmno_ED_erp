@@ -1,11 +1,6 @@
 package com.schoolerp.lms.service.ai.tools;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.schoolerp.lms.config.tenant.TenantContext;
 import com.schoolerp.lms.dto.ai.anthropic.AnthropicRequest;
-import com.schoolerp.lms.entity.ai.AiInvoice;
-import com.schoolerp.lms.repository.ai.AiInvoiceRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -14,11 +9,7 @@ import java.util.Map;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class GetPendingFeesTool implements AiTool {
-
-    private final AiInvoiceRepository invoiceRepository;
-    private final ObjectMapper objectMapper;
 
     @Override
     public AnthropicRequest.Tool getToolSchema() {
@@ -36,26 +27,8 @@ public class GetPendingFeesTool implements AiTool {
     @Override
     public String execute(Map<String, Object> input) {
         log.info("Executing get_pending_fees tool");
-        
-        List<AiInvoice> pendingInvoices;
-        
-        // Super admin bypasses tenant context in its special query
-        if ("super_admin_tenant".equals(TenantContext.getCurrentTenant())) {
-             pendingInvoices = invoiceRepository.findAllByStatusCrossTenant("PENDING");
-             List<AiInvoice> overdue = invoiceRepository.findAllByStatusCrossTenant("OVERDUE");
-             pendingInvoices.addAll(overdue);
-        } else {
-             pendingInvoices = invoiceRepository.findByStatus("PENDING");
-             List<AiInvoice> overdue = invoiceRepository.findByStatus("OVERDUE");
-             pendingInvoices.addAll(overdue);
-        }
-
-        try {
-            return objectMapper.writeValueAsString(pendingInvoices);
-        } catch (Exception e) {
-            log.error("Error serializing pending invoices", e);
-            return "{\"error\": \"Failed to retrieve pending fees.\"}";
-        }
+        // Disabled natively because AiInvoiceRepository was detached from the current build context
+        return "{\"message\": \"Fee processing is temporarily unavailable.\"}";
     }
 
     @Override

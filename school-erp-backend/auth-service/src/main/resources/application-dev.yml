@@ -1,0 +1,25 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    # Mode 1/2 supported via DB_URL override, defaults to local postgres
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/school_erp}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      initialization-fail-timeout: -1
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+# Hardcode a dummy dev secret so developers don't need real ones locally
+jwt:
+  secret: ${JWT_SECRET:local_dev_super_secret_key_needs_to_be_long_12345}

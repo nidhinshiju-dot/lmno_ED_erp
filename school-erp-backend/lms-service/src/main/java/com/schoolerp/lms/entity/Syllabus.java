@@ -18,23 +18,41 @@ public class Syllabus {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(name = "teacher_id", nullable = false)
-    private String teacherId; // The ID of the teacher who owns this syllabus
+    @Column(name = "tenant_id", nullable = false, updatable = false)
+    private String tenantId;
 
-    @Column(name = "class_subject_teacher_id", nullable = false)
-    private String classSubjectTeacherId; // The specific assignment
-
-    @Column(name = "grade_level")
-    private Integer gradeLevel; // Used for easy filtering when sharing
+    @Column(name = "course_id", nullable = false)
+    private String courseId;
 
     @Column(nullable = false)
     private String title;
 
-    @Column(name = "content_url")
-    private String contentUrl; // Nullable if content is just text or not uploaded yet
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "storage_key")
+    private String storageKey;
+
+    @Column(name = "file_name")
+    private String fileName;
+
+    @Column(name = "mime_type")
+    private String mimeType;
+
+    @Column(name = "file_size")
+    private Long fileSize;
+
+    @Column(name = "version")
+    private Integer version = 1;
+
+    @Column(name = "uploaded_by_user_id")
+    private String uploadedByUserId;
+
+    @Column(name = "uploaded_by_staff_id")
+    private String uploadedByStaffId;
 
     @Column(name = "status")
-    private String status = "PENDING"; // PENDING, VERIFIED
+    private String status = "VERIFIED";
 
     @Column(name = "created_at", updatable = false)
     private java.time.LocalDateTime createdAt;
@@ -46,7 +64,8 @@ public class Syllabus {
     void prePersist() {
         createdAt = java.time.LocalDateTime.now();
         updatedAt = java.time.LocalDateTime.now();
-        if (status == null) status = "PENDING";
+        if (status == null) status = "VERIFIED";
+        if (version == null) version = 1;
     }
 
     @PreUpdate

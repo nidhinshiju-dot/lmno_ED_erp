@@ -32,4 +32,16 @@ public class School {
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @jakarta.persistence.Column(name = "provisioning_status")
+    private String provisioningStatus = "PENDING";
+
+    @jakarta.persistence.Column(name = "provisioning_error", columnDefinition = "TEXT")
+    private String provisioningError;
+
+    @jakarta.persistence.Column(name = "provisioned_at")
+    private LocalDateTime provisionedAt;
+
+    @jakarta.persistence.Column(name = "last_provision_attempt_at")
+    private LocalDateTime lastProvisionAttemptAt;
+
 }

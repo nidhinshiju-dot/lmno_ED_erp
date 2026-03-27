@@ -1,0 +1,5 @@
+Direct Error: fetch failed
+
+Gateway: 500 Internal Server Error
+Body: {"timestamp":"2026-03-26T01:38:12.327+00:00","path":"/api/v1/auth/login","status":500,"error":"Internal Server Error","requestId":"4a2ea518-20"}
+

@@ -41,12 +41,29 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                     // Extract claims to pass downstream
                     Claims claims = jwtUtil.getClaims(authHeader);
                     String tenantId = claims.get("tenantId", String.class);
+                    String role = claims.get("role", String.class);
+                    String staffId = claims.get("staffId", String.class);
+                    String studentId = claims.get("studentId", String.class);
                     String userId = claims.getSubject();
 
-                    // Mutate request to add headers for downstream microservices
+                    // Mutate request to SECURELY strip forged client headers and add trusted identity for downstream microservices
                     exchange.getRequest().mutate()
-                            .header("X-Tenant-ID", tenantId != null ? tenantId : "public")
-                            .header("X-User-ID", userId)
+                            .headers(headers -> {
+                                headers.remove("X-Tenant-ID");
+                                headers.remove("X-User-ID");
+                                headers.remove("X-User-Role");
+                                headers.remove("X-Staff-ID");
+                                headers.remove("X-Student-ID");
+                                headers.set("X-Tenant-ID", tenantId != null ? tenantId : "public");
+                                headers.set("X-User-ID", userId);
+                                headers.set("X-User-Role", role != null ? role : "UNKNOWN");
+                                if (staffId != null) {
+                                    headers.set("X-Staff-ID", staffId);
+                                }
+                                if (studentId != null) {
+                                    headers.set("X-Student-ID", studentId);
+                                }
+                            })
                             .build();
 
                 } catch (Exception e) {

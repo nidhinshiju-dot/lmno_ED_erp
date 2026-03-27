@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api-gateway-249177610154.asia-south1.run.app/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const token = localStorage.getItem("erp_token");
@@ -119,7 +119,7 @@ export const CredentialsResetService = {
         });
         if (!res.ok) throw new Error("Failed to generate reset token. Make sure the auth service is running.");
         const data = await res.json();
-        const frontendBase = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+        const frontendBase = typeof window !== "undefined" ? window.location.origin : "https://admin.schoolerp.app";
         return `${frontendBase}/reset-password?token=${data.token}`;
     },
     // Send reset link via WhatsApp for a specific user by their entity ID + type

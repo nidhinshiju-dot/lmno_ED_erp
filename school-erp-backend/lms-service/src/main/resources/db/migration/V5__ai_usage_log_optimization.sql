@@ -1,0 +1,8 @@
+ALTER TABLE ai_usage_logs
+ADD COLUMN latency_ms BIGINT,
+ADD COLUMN status VARCHAR(50),
+ADD COLUMN error_code VARCHAR(100),
+ADD COLUMN cache_hit BOOLEAN DEFAULT FALSE,
+ADD COLUMN model_requested VARCHAR(100),
+ADD COLUMN cache_write_tokens INT DEFAULT 0,
+ADD COLUMN cache_read_tokens INT DEFAULT 0;

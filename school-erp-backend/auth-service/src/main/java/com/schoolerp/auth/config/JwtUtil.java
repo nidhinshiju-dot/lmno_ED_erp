@@ -23,12 +23,17 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes());
     }
 
-    public String generateToken(String username, String role, String tenantId) {
-        return Jwts.builder()
+    public String generateToken(String username, String role, String tenantId, String staffId) {
+        io.jsonwebtoken.JwtBuilder builder = Jwts.builder()
                 .setSubject(username)
                 .claim("role", role)
-                .claim("tenantId", tenantId)
-                .setIssuedAt(new Date())
+                .claim("tenantId", tenantId);
+                
+        if (staffId != null && !staffId.isEmpty()) {
+            builder.claim("staffId", staffId);
+        }
+        
+        return builder.setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();

@@ -8,6 +8,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.security.SecureRandom;
 
 @Service
 public class AuthService {
@@ -20,6 +21,40 @@ public class AuthService {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @org.springframework.beans.factory.annotation.Value("${core-service.url:http://localhost:8083}")
+    private String coreServiceUrl;
+
+    private String fetchStaffId(String userId, String role) {
+        if ("SUPER_ADMIN".equals(role) || "STUDENT".equals(role) || "PARENT".equals(role)) {
+            return null;
+        }
+        try {
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            String url = coreServiceUrl + "/api/v1/staff/user/" + userId;
+            java.util.Map response = restTemplate.getForObject(url, java.util.Map.class);
+            if (response != null && response.containsKey("id")) {
+                return (String) response.get("id");
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to resolve staffId for userId " + userId + ": " + e.getMessage());
+        }
+        return null;
+    }
+
+    public String generateSecurePassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(12);
+        for (int i = 0; i < 12; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
+    }
+
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
 
     public User registerUser(User user) {
         if (userRepository.findByEmail(user.getEmail()).isPresent()) {
@@ -41,8 +76,19 @@ public class AuthService {
             // Verify matched password against hashed DB value
             if (passwordEncoder.matches(rawPassword, user.getPassword())) {
                 System.out.println("DEBUG LOGIN: Password MATCHES! Generating token...");
+                
+                if (user.getRequiresPasswordReset() != null && user.getRequiresPasswordReset()) {
+                    System.out.println("DEBUG LOGIN: Password reset required.");
+                    throw new PasswordResetRequiredException("You must change your temporary password before accessing the system.");
+                }
+                
+                // Use natively stored reference_id (staffId pointer) to prevent synchronous callback. Fallback to HTTP for legacy unmigrated records.
+                String staffId = user.getReferenceId() != null
+                        ? user.getReferenceId()
+                        : fetchStaffId(user.getId(), user.getRole());
+                
                 // Return a signed JWT to the user
-                return jwtUtil.generateToken(user.getEmail(), user.getRole(), user.getTenantId());
+                return jwtUtil.generateToken(user.getEmail(), user.getRole(), user.getTenantId(), staffId);
             } else {
                 System.out.println("DEBUG LOGIN: Password DOES NOT match.");
             }
@@ -60,6 +106,7 @@ public class AuthService {
             throw new RuntimeException("Current password is incorrect");
         }
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setRequiresPasswordReset(false);
         userRepository.save(user);
     }
 

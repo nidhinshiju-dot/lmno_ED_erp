@@ -1,10 +1,6 @@
 package com.schoolerp.lms.service.ai.tools;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schoolerp.lms.dto.ai.anthropic.AnthropicRequest;
-import com.schoolerp.lms.entity.ai.AiAttendance;
-import com.schoolerp.lms.repository.ai.AiAttendanceRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -13,11 +9,7 @@ import java.util.Map;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class GetAttendanceReportTool implements AiTool {
-
-    private final AiAttendanceRepository attendanceRepository;
-    private final ObjectMapper objectMapper;
 
     @Override
     public AnthropicRequest.Tool getToolSchema() {
@@ -38,26 +30,8 @@ public class GetAttendanceReportTool implements AiTool {
     @Override
     public String execute(Map<String, Object> input) {
         log.info("Executing get_attendance_report tool with input: {}", input);
-        
-        String studentId = (String) input.get("studentId");
-        String classId = (String) input.get("classId");
-        
-        List<AiAttendance> records;
-        
-        if (studentId != null && !studentId.isEmpty()) {
-            records = attendanceRepository.findByStudentId(studentId);
-        } else if (classId != null && !classId.isEmpty()) {
-            records = attendanceRepository.findByClassId(classId);
-        } else {
-            records = attendanceRepository.findAll();
-        }
-
-        try {
-            return objectMapper.writeValueAsString(records);
-        } catch (Exception e) {
-            log.error("Error serializing attendance", e);
-            return "{\"error\": \"Failed to retrieve attendance records.\"}";
-        }
+        // Stubbed since AiAttendanceRepository is unavailable.
+        return "{\"error\": \"Attendance data mapping is temporarily unavailable.\"}";
     }
 
     @Override

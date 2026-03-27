@@ -14,6 +14,7 @@ public class SchoolService {
 
     private final SchoolRepository repository;
     private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private final CredentialsService credentialsService;
     
     @org.springframework.beans.factory.annotation.Value("${AUTH_SERVICE_URL:http://auth-service:8081}")
     private String authServiceUrl;
@@ -53,20 +54,11 @@ public class SchoolService {
             
             jdbcTemplate.execute("SET search_path TO public"); // Reset
             
-            // 3. Provision the Admin User in Auth Service
-            String defaultPassword = "Admin@" + (int)(Math.random() * 9000 + 1000);
-            String url = authServiceUrl + "/api/v1/auth/provision";
+            // 3. Provision the Admin User in Auth Service Asynchronously
+            credentialsService.createSchoolAdminCredential(savedSchool);
             
-            java.util.Map<String, String> request = new java.util.HashMap<>();
-            request.put("email", school.getContactEmail());
-            request.put("password", defaultPassword);
-            request.put("tenantId", tenantId);
-            
-            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
-            restTemplate.postForObject(url, request, String.class);
-            
-            // Return the temp password in the response so the frontend can display it
-            return new SchoolCreationResponse(savedSchool, school.getContactEmail(), defaultPassword);
+            // Return indicating that provisioning is async
+            return new SchoolCreationResponse(savedSchool, school.getContactEmail(), "Pending Async Provisioning (Check Admin Email)");
             
         } catch (Exception e) {
             throw new RuntimeException("Failed to provision tenant database: " + e.getMessage(), e);

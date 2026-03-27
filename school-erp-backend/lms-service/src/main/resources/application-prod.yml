@@ -24,7 +24,10 @@ spring:
       max-lifetime: 1800000
   jpa:
     hibernate:
-      ddl-auto: update      # UAT/Prod schema generation enabled for Cloud SQL deployment
+      ddl-auto: validate      # Disabled runtime table updates, enforced via Flyway
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
     show-sql: false
     properties:
       hibernate:
@@ -32,8 +35,38 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
 anthropic:
+  routing:
+    default-model: claude-3-haiku-20240307
+    complex-model: claude-3-5-sonnet-20241022
+    enable-escalation: true
+    complexity-threshold: 70
+  generation:
+    max-input-tokens:
+      chat: 1200
+      explain: 1200
+      revise: 1200
+      practice: 900
+      quiz: 900
+    max-output-tokens:
+      chat: 400
+      explain: 450
+      revise: 400
+      practice: 250
+      quiz: 220
+  context:
+    max-history-messages: 5
+    max-memory-items: 5
+    max-syllabus-topics: 8
+    max-insight-items: 5
+  caching:
+    enabled: true
+    cache-stable-prefix: true
+  quality:
+    min-answer-length: 80
   api:
     key: ${ANTHROPIC_API_KEY:}
+  client:
+    timeout: 5000
 
 ai:
   enabled: false

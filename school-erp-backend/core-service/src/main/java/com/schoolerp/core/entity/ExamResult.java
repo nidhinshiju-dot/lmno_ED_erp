@@ -36,4 +36,10 @@ public class ExamResult {
 
     @Column(name = "total_students")
     private Integer totalStudents; // Total students who appeared in this exam
+
+    @Column(name = "normalized_score")
+    private Double normalizedScore;
+
+    @Column(name = "ai_insights_data", columnDefinition = "TEXT")
+    private String aiInsightsData;
 }

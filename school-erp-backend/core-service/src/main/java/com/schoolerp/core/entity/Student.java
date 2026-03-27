@@ -59,6 +59,18 @@ public class Student {
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
+    @Column(name = "provisioning_status")
+    private String provisioningStatus = "PENDING";
+
+    @Column(name = "provisioning_error", columnDefinition = "TEXT")
+    private String provisioningError;
+
+    @Column(name = "provisioned_at")
+    private java.time.LocalDateTime provisionedAt;
+
+    @Column(name = "last_provision_attempt_at")
+    private java.time.LocalDateTime lastProvisionAttemptAt;
+
     @PrePersist
     void prePersist() {
         if (status == null)

@@ -44,6 +44,13 @@ public class AuthController {
         try {
             String token = authService.loginUser(loginRequest.getEmail(), loginRequest.getPassword());
             return ResponseEntity.ok(new JwtResponse(token));
+        } catch (com.schoolerp.auth.service.PasswordResetRequiredException e) {
+            java.util.Map<String, Object> resp = new java.util.HashMap<>();
+            resp.put("error", "PASSWORD_RESET_REQUIRED");
+            resp.put("message", e.getMessage());
+            resp.put("token", null);
+            resp.put("requiresPasswordReset", true);
+            return ResponseEntity.status(403).body(resp);
         } catch (Exception e) {
             return ResponseEntity.status(401).body(e.getMessage());
         }
@@ -52,13 +59,41 @@ public class AuthController {
     @PostMapping("/provision")
     public ResponseEntity<?> provisionAdmin(@Valid @RequestBody ProvisionRequest request) {
         try {
+            java.util.Optional<User> existingUserOpt = authService.findByEmail(request.getEmail());
+            if (existingUserOpt.isPresent()) {
+                User u = existingUserOpt.get();
+                java.util.Map<String, Object> response = new java.util.HashMap<>();
+                response.put("id", u.getId());
+                response.put("email", u.getEmail());
+                response.put("role", u.getRole());
+                response.put("temporaryPassword", "Already Provisioned");
+                response.put("requiresPasswordReset", u.getRequiresPasswordReset());
+                return ResponseEntity.ok(response);
+            }
+
             User adminUser = new User();
             adminUser.setEmail(request.getEmail());
-            adminUser.setPassword(request.getPassword());
             adminUser.setTenantId(request.getTenantId());
-            adminUser.setRole("ADMIN"); // explicitly assigning the ADMIN role
+            adminUser.setRole(request.getRole() != null ? request.getRole() : "ADMIN");
+            adminUser.setReferenceId(request.getReferenceId());
+            
+            String plainPassword = request.getPassword();
+            if (plainPassword == null || plainPassword.isEmpty()) {
+                plainPassword = authService.generateSecurePassword();
+            }
+            adminUser.setPassword(plainPassword); // Service will hash it
+            adminUser.setRequiresPasswordReset(true);
+            
             User registeredUser = authService.registerUser(adminUser);
-            return ResponseEntity.ok(registeredUser);
+            
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("id", registeredUser.getId());
+            response.put("email", registeredUser.getEmail());
+            response.put("role", registeredUser.getRole());
+            response.put("temporaryPassword", plainPassword);
+            response.put("requiresPasswordReset", true);
+            
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -112,6 +147,8 @@ class ProvisionRequest {
     private String email;
     private String password;
     private String tenantId;
+    private String role;
+    private String referenceId;
 }
 
 @Data

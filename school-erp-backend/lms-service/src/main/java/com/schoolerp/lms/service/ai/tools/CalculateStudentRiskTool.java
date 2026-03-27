@@ -2,16 +2,16 @@ package com.schoolerp.lms.service.ai.tools;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schoolerp.lms.dto.ai.anthropic.AnthropicRequest;
-import com.schoolerp.lms.entity.ai.AiExamResult;
-import com.schoolerp.lms.repository.ai.AiAttendanceRepository;
-import com.schoolerp.lms.repository.ai.AiExamResultRepository;
-import com.schoolerp.lms.repository.ai.AiInvoiceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,16 +21,23 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CalculateStudentRiskTool implements AiTool {
 
-    private final AiAttendanceRepository attendanceRepository;
-    private final AiExamResultRepository examResultRepository;
-    private final AiInvoiceRepository invoiceRepository;
     private final ObjectMapper objectMapper;
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Value("${services.core.url:http://localhost:8081}")
+    private String coreServiceUrl;
+
+    @Value("${services.fee.url:http://localhost:8083}")
+    private String feeServiceUrl;
+
+    @Value("${internal.auth.secret:backend-internal-trust-key}")
+    private String internalAuthSecret;
 
     @Override
     public AnthropicRequest.Tool getToolSchema() {
         return AnthropicRequest.Tool.builder()
                 .name("calculate_student_risk")
-                .description("Calculates the academic and operational risk score for a given student ID.")
+                .description("Calculates the academic and operational risk score for a given student ID dynamically via proxy integrations.")
                 .inputSchema(AnthropicRequest.InputSchema.builder()
                         .type("object")
                         .properties(Map.of(
@@ -48,71 +55,62 @@ public class CalculateStudentRiskTool implements AiTool {
             return "{\"error\": \"studentId is required\"}";
         }
 
-        log.info("Calculating risk for student: {}", studentId);
+        log.info("Calculating risk proxying downstream for student: {}", studentId);
 
-        // 1. Attendance Drop (0-100 scale, higher is worse attendance)
-        long totalDays = attendanceRepository.countTotalAttendanceDaysByStudentId(studentId);
-        long absences = attendanceRepository.countAbsencesByStudentId(studentId);
-        
-        double attendanceDropScore = 0.0;
-        if (totalDays > 0) {
-            double absentPercentage = ((double) absences / totalDays) * 100.0;
-            // Scale: if absent 0%, score is 0. If absent 50%+, score is 100
-            attendanceDropScore = Math.min(100.0, absentPercentage * 2); 
-        }
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-Service-Auth", internalAuthSecret);
 
-        // 2. Score Drop (0-100 scale, derived from exam results)
-        List<AiExamResult> recentExams = examResultRepository.findRecentResultsByStudentId(studentId);
-        double scoreDropScore = 0.0;
-        
-        if (recentExams != null && !recentExams.isEmpty()) {
-            // Very simplified: just checking if recent average is low
-            double totalObtained = 0.0;
-            double totalMax = 0.0;
-            for (AiExamResult result : recentExams) {
-                if (result.getMarksObtained() != null && result.getMaxMarks() != null) {
-                    totalObtained += result.getMarksObtained().doubleValue();
-                    totalMax += result.getMaxMarks().doubleValue();
-                }
-            }
-            if (totalMax > 0.0) {
-                double avgPercent = (totalObtained / totalMax) * 100.0;
-                // If avg is 100%, scoreDropScore is 0. If avg is 40% (failing), scoreDropScore is 100.
-                scoreDropScore = Math.max(0.0, 100.0 - ((avgPercent - 40.0) * (100.0 / 60.0)));
-                scoreDropScore = Math.min(100.0, scoreDropScore);
-            }
-        }
-
-        // 3. Fee Pending (0-100 scale)
-        long pendingFeeCount = invoiceRepository.findByStudentIdAndStatus(studentId, "PENDING").size();
-        long overdueFeeCount = invoiceRepository.findByStudentIdAndStatus(studentId, "OVERDUE").size();
-        
-        double feePendingScore = Math.min(100.0, (pendingFeeCount * 25.0) + (overdueFeeCount * 50.0));
-
-        // Risk formula: (attendance_drop * 0.4) + (score_drop * 0.4) + (fee_pending * 0.2)
-        double totalRiskScore = (attendanceDropScore * 0.4) + (scoreDropScore * 0.4) + (feePendingScore * 0.2);
-        
-        String riskCategory = "Low";
-        if (totalRiskScore > 30 && totalRiskScore <= 60) {
-            riskCategory = "Medium";
-        } else if (totalRiskScore > 60) {
-            riskCategory = "High";
-        }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("studentId", studentId);
-        result.put("riskScore", BigDecimal.valueOf(totalRiskScore).setScale(2, RoundingMode.HALF_UP));
-        result.put("riskCategory", riskCategory);
-        result.put("attendanceDropFactor", BigDecimal.valueOf(attendanceDropScore).setScale(2, RoundingMode.HALF_UP));
-        result.put("scoreDropFactor", BigDecimal.valueOf(scoreDropScore).setScale(2, RoundingMode.HALF_UP));
-        result.put("feePendingFactor", BigDecimal.valueOf(feePendingScore).setScale(2, RoundingMode.HALF_UP));
+        Map<String, Object> combinedRisk = new HashMap<>();
+        combinedRisk.put("studentId", studentId);
 
         try {
-            return objectMapper.writeValueAsString(result);
+            // 1. Fetch Academic Risk DTO
+            ResponseEntity<Map> academicResponse = restTemplate.exchange(
+                    coreServiceUrl + "/api/v1/internal/students/" + studentId + "/risk/academic",
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    Map.class
+            );
+            if (academicResponse.getBody() != null) {
+                combinedRisk.putAll(academicResponse.getBody());
+            }
+
+            // 2. Fetch Financial Risk DTO
+            ResponseEntity<Map> feeResponse = restTemplate.exchange(
+                    feeServiceUrl + "/api/v1/internal/invoices/student/" + studentId + "/risk/financial",
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    Map.class
+            );
+            if (feeResponse.getBody() != null) {
+                combinedRisk.putAll(feeResponse.getBody());
+            }
+
+            // Combine composite risk
+            double attScore = extractDouble(combinedRisk.get("attendanceDropScore"));
+            double examScore = extractDouble(combinedRisk.get("examsScoreDrop"));
+            double feeScore = extractDouble(combinedRisk.get("feeRiskScore"));
+
+            double totalRiskScore = (attScore * 0.4) + (examScore * 0.4) + (feeScore * 0.2);
+            combinedRisk.put("riskScore", totalRiskScore);
+            
+            String riskCategory = "Low";
+            if (totalRiskScore > 30 && totalRiskScore <= 60) riskCategory = "Medium";
+            else if (totalRiskScore > 60) riskCategory = "High";
+            
+            combinedRisk.put("riskCategory", riskCategory);
+
+            return objectMapper.writeValueAsString(combinedRisk);
         } catch (Exception e) {
-            log.error("Error serializing risk result", e);
-            return "{\"error\": \"Failed to calculate risk\"}";
+            log.error("Internal service timeout or failure calculating risk", e);
+            return "{\"error\": \"Proxy failure determining student risk factor across dependent services\"}";
         }
+    }
+
+    private double extractDouble(Object val) {
+        if (val == null) return 0.0;
+        if (val instanceof Number) return ((Number) val).doubleValue();
+        return 0.0;
     }
 
     @Override

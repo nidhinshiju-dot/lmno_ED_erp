@@ -1,0 +1,53 @@
+version: '3.9'
+
+# Override profile for Hot Reload local development
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+services:
+  api-gateway:
+    build: !reset null
+    image: maven:3.9.6-eclipse-temurin-21
+    command: mvn -pl api-gateway spring-boot:run -Dspring-boot.run.profiles=dev
+    volumes:
+      - .:/app
+      - maven_cache:/root/.m2
+    working_dir: /app
+
+  auth-service:
+    build: !reset null
+    image: maven:3.9.6-eclipse-temurin-21
+    command: mvn -pl auth-service spring-boot:run -Dspring-boot.run.profiles=dev
+    volumes:
+      - .:/app
+      - maven_cache:/root/.m2
+    working_dir: /app
+
+  core-service:
+    build: !reset null
+    image: maven:3.9.6-eclipse-temurin-21
+    command: mvn -pl core-service spring-boot:run -Dspring-boot.run.profiles=dev
+    volumes:
+      - .:/app
+      - maven_cache:/root/.m2
+    working_dir: /app
+
+  lms-service:
+    build: !reset null
+    image: maven:3.9.6-eclipse-temurin-21
+    command: mvn -pl lms-service spring-boot:run -Dspring-boot.run.profiles=dev
+    volumes:
+      - .:/app
+      - maven_cache:/root/.m2
+    working_dir: /app
+
+  fee-service:
+    build: !reset null
+    image: maven:3.9.6-eclipse-temurin-21
+    command: mvn -pl fee-service spring-boot:run -Dspring-boot.run.profiles=dev
+    volumes:
+      - .:/app
+      - maven_cache:/root/.m2
+    working_dir: /app
+
+volumes:
+  maven_cache:

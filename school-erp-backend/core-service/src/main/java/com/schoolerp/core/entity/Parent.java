@@ -32,4 +32,16 @@ public class Parent {
     @Column(name = "relation")
     private String relation;
 
+    @Column(name = "provisioning_status")
+    private String provisioningStatus = "PENDING";
+
+    @Column(name = "provisioning_error", columnDefinition = "TEXT")
+    private String provisioningError;
+
+    @Column(name = "provisioned_at")
+    private java.time.LocalDateTime provisionedAt;
+
+    @Column(name = "last_provision_attempt_at")
+    private java.time.LocalDateTime lastProvisionAttemptAt;
+
 }

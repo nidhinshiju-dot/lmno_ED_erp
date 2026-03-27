@@ -15,6 +15,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 
 import java.util.List;
 import java.util.Map;
@@ -28,20 +30,28 @@ public class CredentialsService {
     private final StaffRepository staffRepository;
     private final StudentRepository studentRepository;
     private final ParentRepository parentRepository;
+    private final com.schoolerp.core.repository.SchoolRepository schoolRepository;
     
     // Auth-Service is routed directly via docker container hostname
     private static final String AUTH_REGISTER_URL = "http://erp-uat-auth:8081/api/v1/auth/register";
     private final RestTemplate restTemplate = new RestTemplate();
 
+    @Async
     @Transactional
-    public boolean createStaffCredential(Staff s) {
-        return createStaffCredential(s, null);
+    public void createStaffCredential(Staff paramStaff) {
+        createStaffCredential(paramStaff, null);
     }
 
+    @Async
     @Transactional
-    public boolean createStaffCredential(Staff s, String tenantId) {
+    public void createStaffCredential(Staff paramStaff, String tenantId) {
+        Staff s = staffRepository.findById(paramStaff.getId()).orElse(null);
+        if (s == null) return;
+
         if (s.getUserId() == null || s.getUserId().isEmpty()) {
-            // Generate system username: teacher{firstname}{random}@{schoolname}.com
+            s.setProvisioningStatus("PENDING");
+            s.setLastProvisionAttemptAt(java.time.LocalDateTime.now());
+            
             String firstName = (s.getName() != null && !s.getName().isBlank())
                     ? s.getName().trim().split("\\s+")[0].toLowerCase().replaceAll("[^a-z0-9]", "")
                     : "teacher";
@@ -49,67 +59,150 @@ public class CredentialsService {
             String schoolDomain = (tenantId != null && !tenantId.isBlank()) ? tenantId.toLowerCase() : "school";
             String generatedEmail = "teacher" + firstName + randomNum + "@" + schoolDomain + ".com";
 
-            String userId = createUserInAuthService(generatedEmail, "Temporary123!", "TEACHER", tenantId);
+            String refId = s.getId() != null ? String.valueOf(s.getId()) : null;
+            String userId = createUserInAuthService(generatedEmail, "TEACHER", tenantId, refId);
             if (userId != null) {
-                // Store the generated username as the staff email if none exists
                 if (s.getEmail() == null || s.getEmail().isBlank()) {
                     s.setEmail(generatedEmail);
                 }
                 s.setUserId(userId);
-                staffRepository.save(s);
+                s.setProvisioningStatus("PROVISIONED");
+                s.setProvisionedAt(java.time.LocalDateTime.now());
+                s.setProvisioningError(null);
                 log.info("Created auth user for staff {} with username: {}", s.getName(), generatedEmail);
-                return true;
             } else {
-                throw new RuntimeException("Failed to provision auth user for staff. Creation aborted.");
+                s.setProvisioningStatus("FAILED");
+                s.setProvisioningError("Auth service failed or returned null");
+                log.error("Failed to provision auth user for staff {}", s.getName());
             }
+            staffRepository.save(s);
         }
-        return false;
     }
 
 
+    @Async
     @Transactional
-    public boolean createParentCredential(Parent p) {
+    public void createParentCredential(Parent paramParent) {
+        Parent p = parentRepository.findById(paramParent.getId()).orElse(null);
+        if (p == null) return;
+        
         if (p.getUserId() == null) {
-            String userId = createUserInAuthService(p.getPhoneNumber(), "ParentPass123!", "PARENT");
+            p.setProvisioningStatus("PENDING");
+            p.setLastProvisionAttemptAt(java.time.LocalDateTime.now());
+            
+            String refId = p.getId() != null ? String.valueOf(p.getId()) : null;
+            String userId = createUserInAuthService(p.getPhoneNumber(), "PARENT", null, refId);
             if (userId != null) {
                 p.setUserId(java.util.UUID.fromString(userId));
-                parentRepository.save(p);
-                return true;
+                p.setProvisioningStatus("PROVISIONED");
+                p.setProvisionedAt(java.time.LocalDateTime.now());
+                p.setProvisioningError(null);
+            } else {
+                p.setProvisioningStatus("FAILED");
+                p.setProvisioningError("Auth service failed or returned null");
             }
+            parentRepository.save(p);
         }
-        return false;
     }
 
+    @Async
     @Transactional
-    public boolean createStudentCredential(Student st) {
+    public void createStudentCredential(Student paramStudent) {
+        Student st = studentRepository.findById(paramStudent.getId()).orElse(null);
+        if (st == null) return;
+        
         if (st.getUserId() == null || st.getUserId().isEmpty()) {
-            String dobStr = (st.getDob() != null) ? st.getDob().toString().replace("-", "") : "123456";
+            st.setProvisioningStatus("PENDING");
+            st.setLastProvisionAttemptAt(java.time.LocalDateTime.now());
+            
             String username = (st.getAdmissionNumber() != null) ? st.getAdmissionNumber() : "STU" + st.getId().substring(0,6);
-            String userId = createUserInAuthService(username, dobStr, "STUDENT");
+            String refId = st.getId() != null ? String.valueOf(st.getId()) : null;
+            String userId = createUserInAuthService(username, "STUDENT", null, refId);
             if (userId != null) {
                 st.setUserId(userId);
-                studentRepository.save(st);
-                return true;
+                st.setProvisioningStatus("PROVISIONED");
+                st.setProvisionedAt(java.time.LocalDateTime.now());
+                st.setProvisioningError(null);
+            } else {
+                st.setProvisioningStatus("FAILED");
+                st.setProvisioningError("Auth service failed or returned null");
             }
+            studentRepository.save(st);
         }
-        return false;
+    }
+
+    @Async
+    @Transactional
+    public void createSchoolAdminCredential(com.schoolerp.core.entity.School paramSchool) {
+        com.schoolerp.core.entity.School s = schoolRepository.findById(paramSchool.getId()).orElse(null);
+        if (s == null) return;
+        
+        s.setProvisioningStatus("PENDING");
+        s.setLastProvisionAttemptAt(java.time.LocalDateTime.now());
+        
+        String userId = createUserInAuthService(s.getContactEmail(), "ADMIN", s.getId(), null);
+        if (userId != null) {
+            s.setProvisioningStatus("PROVISIONED");
+            s.setProvisionedAt(java.time.LocalDateTime.now());
+            s.setProvisioningError(null);
+        } else {
+            s.setProvisioningStatus("FAILED");
+            s.setProvisioningError("Auth service failed or returned null");
+        }
+        schoolRepository.save(s);
+    }
+    
+    @Scheduled(fixedDelay = 300000)
+    public void retryFailedProvisioning() {
+        log.info("Starting scheduled retry for failed provisioning...");
+        
+        // Find staff
+        List<Staff> failedStaff = staffRepository.findAll().stream()
+                .filter(stf -> "FAILED".equals(stf.getProvisioningStatus()))
+                .toList();
+        for (Staff staff : failedStaff) {
+            createStaffCredential(staff);
+        }
+        
+        // Find students
+        List<Student> failedStudents = studentRepository.findAll().stream()
+                .filter(stu -> "FAILED".equals(stu.getProvisioningStatus()))
+                .toList();
+        for (Student student : failedStudents) {
+            createStudentCredential(student);
+        }
+        
+        // Find parents
+        List<Parent> failedParents = parentRepository.findAll().stream()
+                .filter(par -> "FAILED".equals(par.getProvisioningStatus()))
+                .toList();
+        for (Parent parent : failedParents) {
+            createParentCredential(parent);
+        }
+        
+        // Find schools
+        List<com.schoolerp.core.entity.School> failedSchools = schoolRepository.findAll().stream()
+                .filter(sch -> "FAILED".equals(sch.getProvisioningStatus()))
+                .toList();
+        for (com.schoolerp.core.entity.School school : failedSchools) {
+            createSchoolAdminCredential(school);
+        }
+        
+        log.info("Completed scheduled retry for failed provisioning.");
     }
 
     private static final String AUTH_PROVISION_URL = "http://erp-uat-auth:8081/api/v1/auth/provision";
 
-    private String createUserInAuthService(String email, String password, String role) {
-        return createUserInAuthService(email, password, role, null);
-    }
-
-    private String createUserInAuthService(String email, String password, String role, String tenantId) {
+    private String createUserInAuthService(String email, String role, String tenantId, String referenceId) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.set("Content-Type", "application/json");
 
             String tenantPart = (tenantId != null) ? String.format(", \"tenantId\": \"%s\"", tenantId) : "";
+            String refPart = (referenceId != null) ? String.format(", \"referenceId\": \"%s\"", referenceId) : "";
             String requestBody = String.format(
-                "{\"email\": \"%s\", \"password\": \"%s\", \"role\": \"%s\"%s}",
-                email, password, role, tenantPart
+                "{\"email\": \"%s\", \"role\": \"%s\"%s%s}",
+                email, role, tenantPart, refPart
             );
             HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
 
@@ -117,7 +210,8 @@ public class CredentialsService {
             log.info("Provision request - email: {}, tenantId: {}, response status: {}", email, tenantId, response.getStatusCode());
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                log.info("User {} provisioned successfully in Auth-Service with role {}", email, role);
+                String generatedPassword = (String) response.getBody().get("temporaryPassword");
+                log.info("User {} provisioned successfully in Auth-Service with role {} [Password generated locally by auth]", email, role);
                 return (String) response.getBody().get("id");
             } else {
                 log.error("Failed to provision user {} in Auth-Service. Status: {}", email, response.getStatusCode());

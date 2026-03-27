@@ -49,10 +49,7 @@ public class StaffService {
         if (staff.getUserId() != null && !staff.getUserId().isEmpty()) {
             throw new RuntimeException("Staff member already has an auth account provisioned.");
         }
-        boolean provisioned = credentialsService.createStaffCredential(staff);
-        if (!provisioned) {
-            throw new RuntimeException("Failed to provision auth account.");
-        }
+        credentialsService.createStaffCredential(staff);
     }
 
     @Transactional

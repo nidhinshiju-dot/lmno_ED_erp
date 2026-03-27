@@ -29,4 +29,10 @@ public class User {
     
     @Column(name = "last_name")
     private String lastName;
+
+    @Column(name = "requires_password_reset", nullable = false)
+    private Boolean requiresPasswordReset = true;
+
+    @Column(name = "reference_id")
+    private String referenceId;
 }

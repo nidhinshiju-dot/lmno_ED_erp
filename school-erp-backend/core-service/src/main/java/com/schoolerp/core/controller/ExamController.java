@@ -39,14 +39,25 @@ public class ExamController {
         return ResponseEntity.ok(examService.getByClassId(classId));
     }
 
-    @GetMapping("/teacher/{teacherId}")
-    public ResponseEntity<List<Exam>> getByTeacher(@PathVariable String teacherId) {
-        return ResponseEntity.ok(examService.getByTeacherId(teacherId));
+    @GetMapping("/teacher/me")
+    public ResponseEntity<List<Exam>> getMyTeacherExams(
+            @RequestHeader(value = "X-Staff-ID", required = false) String staffId) {
+        try {
+            return ResponseEntity.ok(examService.getMyTeacherExams(staffId));
+        } catch (Exception e) {
+            return ResponseEntity.status(403).build();
+        }
     }
 
     @PostMapping
-    public ResponseEntity<Exam> create(@Valid @RequestBody Exam exam) {
-        return ResponseEntity.ok(examService.create(exam));
+    public ResponseEntity<Exam> create(
+            @Valid @RequestBody Exam exam,
+            @RequestHeader(value = "X-User-Role", required = true) String role) {
+        try {
+            return ResponseEntity.ok(examService.create(exam, role));
+        } catch (Exception e) {
+            return ResponseEntity.status(403).build();
+        }
     }
 
     @GetMapping("/{examId}/results")
@@ -54,37 +65,55 @@ public class ExamController {
         return ResponseEntity.ok(examService.getResults(examId));
     }
 
-    @GetMapping("/results/student/{studentId}")
-    public ResponseEntity<List<ExamResult>> getStudentResults(@PathVariable String studentId) {
-        return ResponseEntity.ok(examService.getStudentResults(studentId));
+    @GetMapping("/results/student/me")
+    public ResponseEntity<List<ExamResult>> getMyStudentResults(
+            @RequestHeader(value = "X-User-ID", required = true) String userId) {
+        return ResponseEntity.ok(examService.getMyStudentResults(userId));
+    }
+
+    @GetMapping("/results/parent/me")
+    public ResponseEntity<List<ExamResult>> getMyParentChildrenResults(
+            @RequestHeader(value = "X-User-ID", required = true) String userId) {
+        return ResponseEntity.ok(examService.getMyParentChildrenResults(userId));
     }
 
     @PostMapping("/{examId}/results")
-    public ResponseEntity<List<ExamResult>> saveResults(@Valid @RequestBody List<ExamResult> results) {
-        return ResponseEntity.ok(examService.saveResults(results));
+    public ResponseEntity<?> saveResults(
+            @PathVariable String examId,
+            @Valid @RequestBody List<ExamResult> results,
+            @RequestHeader(value = "X-User-Role", required = true) String role,
+            @RequestHeader(value = "X-Staff-ID", required = false) String staffId) {
+        try {
+            return ResponseEntity.ok(examService.saveResults(examId, results, role, staffId));
+        } catch (Exception e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        }
     }
 
     /**
-     * A14 — Publish results and auto-generate class rank.
-     * Fetches all results for the exam, sorts by marksObtained descending,
-     * assigns classRank (1 = top), then saves and returns.
+     * Publish results and auto-generate class rank.
      */
     @PostMapping("/{examId}/publish")
-    public ResponseEntity<List<ExamResult>> publishResults(@PathVariable String examId) {
+    public ResponseEntity<?> publishResults(
+            @PathVariable String examId,
+            @RequestHeader(value = "X-User-Role", required = true) String role) {
+        
+        if (!"ADMIN".equals(role) && !"SUPER_ADMIN".equals(role)) {
+            return ResponseEntity.status(403).body("Only ADMIN can publish rank results");
+        }
+
         List<ExamResult> results = examResultRepository.findByExamId(examId);
         if (results.isEmpty()) return ResponseEntity.notFound().build();
 
-        // Sort descending by marks
         results.sort(Comparator.comparingInt(ExamResult::getMarksObtained).reversed());
 
         int total = results.size();
-        // Handle ties — students with the same marks get the same rank
         int currentRank = 1;
         List<ExamResult> updated = new ArrayList<>();
         for (int i = 0; i < total; i++) {
             ExamResult r = results.get(i);
             if (i > 0 && r.getMarksObtained() == results.get(i - 1).getMarksObtained()) {
-                r.setClassRank(results.get(i - 1).getClassRank()); // Same rank for tie
+                r.setClassRank(results.get(i - 1).getClassRank());
             } else {
                 r.setClassRank(currentRank);
             }

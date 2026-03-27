@@ -1,65 +1,144 @@
-version: '3.8'
+version: '3.9'
 
 services:
-  # PostgreSQL Database for microservices (Schema per tenant)
+
   postgres:
     image: postgres:15-alpine
-    container_name: school-erp-postgres
+    container_name: erp-local-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: school_erp
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_local_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
     networks:
-      - erp-network
+      - erp-local-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # PgAdmin for easy database management
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: school-erp-pgadmin
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@school.app
-      PGADMIN_DEFAULT_PASSWORD: admin
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: api-gateway
+    container_name: erp-local-gateway
+    restart: unless-stopped
     ports:
-      - "5050:80"
-    depends_on:
-      - postgres
-    networks:
-      - erp-network
-
-  # Kafka setup (Zookeeper + Broker) for Future Event-Driven Messaging
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
-    container_name: school-erp-zookeeper
+      - "8080:8080"
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    networks:
-      - erp-network
-
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    container_name: school-erp-kafka
+      SPRING_PROFILES_ACTIVE: dev
+      JWT_SECRET: local_dev_super_secret_key_needs_to_be_long_12345
+      # Overriding application-dev.yml localhost defaults to Docker internal DNS
+      CORE_SERVICE_URL: http://core-service:8083
+      AUTH_SERVICE_URL: http://auth-service:8081
+      LMS_SERVICE_URL: http://lms-service:8082
+      FEE_SERVICE_URL: http://fee-service:8084
     depends_on:
-      - zookeeper
+      - core-service
+      - auth-service
+      - lms-service
+      - fee-service
+    networks:
+      - erp-local-network
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: auth-service
+    container_name: erp-local-auth
+    restart: unless-stopped
     ports:
-      - "9092:9092"
+      - "8081:8081"
     environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://postgres:5432/school_erp
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      JWT_SECRET: local_dev_super_secret_key_needs_to_be_long_12345
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
-      - erp-network
+      - erp-local-network
+
+  core-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: core-service
+    container_name: erp-local-core
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://postgres:5432/school_erp
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      AUTH_SERVICE_URL: http://auth-service:8081
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - erp-local-network
+
+  lms-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: lms-service
+    container_name: erp-local-lms
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://postgres:5432/school_erp
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      AI_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - erp-local-network
+
+  fee-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE: fee-service
+    container_name: erp-local-fee
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_URL: jdbc:postgresql://postgres:5432/school_erp
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - erp-local-network
 
 volumes:
-  postgres_data:
+  postgres_local_data:
 
 networks:
-  erp-network:
+  erp-local-network:
     driver: bridge

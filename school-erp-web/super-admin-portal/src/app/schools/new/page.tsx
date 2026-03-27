@@ -86,7 +86,7 @@ export default function OnboardSchoolPage() {
                       </h3>
                       <p className="text-sm text-muted-foreground">The initial administrator account has been created in the Auth Service.</p>
                       <div className="mt-4 space-y-2 font-mono text-sm bg-background p-4 rounded-lg border border-border">
-                          <p><span className="text-muted-foreground">Login URL:</span> http://localhost:3000</p>
+                          <p><span className="text-muted-foreground">Login URL:</span> https://admin.schoolerp.app</p>
                           <p><span className="text-muted-foreground">Tenant ID:</span> {formData.id}</p>
                           <p><span className="text-muted-foreground">Email:</span> {formData.contactEmail}</p>
                           <div className="flex items-center gap-2">
