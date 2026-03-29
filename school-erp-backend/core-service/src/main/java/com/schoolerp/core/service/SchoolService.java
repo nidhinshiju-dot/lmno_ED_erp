@@ -23,6 +23,10 @@ public class SchoolService {
         return repository.findAll();
     }
 
+    public java.util.Optional<School> getById(String id) {
+        return repository.findById(id);
+    }
+
     @org.springframework.transaction.annotation.Transactional
     public SchoolCreationResponse createSchool(School school) {
         School savedSchool = repository.save(school);

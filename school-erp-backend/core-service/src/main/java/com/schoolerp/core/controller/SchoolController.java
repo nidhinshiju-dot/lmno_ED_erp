@@ -22,6 +22,13 @@ public class SchoolController {
         return ResponseEntity.ok(schoolService.getAllSchools());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<School> getSchoolById(@PathVariable("id") String id) {
+        return schoolService.getById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping
     public ResponseEntity<SchoolCreationResponse> createSchool(@Valid @RequestBody School school) {
         return ResponseEntity.ok(schoolService.createSchool(school));
@@ -34,7 +41,7 @@ public class SchoolController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable String id) {
+    public ResponseEntity<Void> delete(@PathVariable("id") String id) {
         // Implementation stub added by QA Remediation
         return ResponseEntity.noContent().build();
     }

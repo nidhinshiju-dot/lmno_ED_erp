@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8085/api/v1";
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     const token = localStorage.getItem("erp_token");
@@ -67,6 +67,7 @@ export const StaffService = {
     create: (staffData: Record<string, unknown>) => fetchWithAuth("/staff", { method: "POST", body: JSON.stringify(staffData) }),
     update: (id: string, staffData: Record<string, unknown>) => fetchWithAuth(`/staff/${id}`, { method: "PUT", body: JSON.stringify(staffData) }),
     delete: (id: string) => fetchWithAuth(`/staff/${id}`, { method: "DELETE" }),
+    provisionLogin: (id: string) => fetchWithAuth(`/staff/${id}/provision-login`, { method: "POST" }),
 };
 
 

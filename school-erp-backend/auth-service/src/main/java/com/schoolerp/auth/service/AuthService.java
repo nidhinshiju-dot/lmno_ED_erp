@@ -9,9 +9,13 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.security.SecureRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -72,6 +76,9 @@ public class AuthService {
         
         if (userOpt.isPresent()) {
             User user = userOpt.get();
+            if (!user.isActive()) {
+                throw new RuntimeException("Account is deactivated");
+            }
             System.out.println("DEBUG LOGIN: User found. DB hash is: " + user.getPassword());
             // Verify matched password against hashed DB value
             if (passwordEncoder.matches(rawPassword, user.getPassword())) {
@@ -125,33 +132,86 @@ public class AuthService {
         emailService.sendPasswordResetEmail(email, tempPassword);
     }
 
-    /** Generate a time-limited reset token (valid for 24h). */
+    private String hashToken(String token) {
+        try {
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(token.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+        } catch (Exception e) {
+            throw new RuntimeException("Error hashing token", e);
+        }
+    }
+
+    /** Generate a secure random reset token (valid for 24h). */
     public String generateResetToken(String email) {
-        userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("No login account exists for email"));
+        if (!user.isActive()) {
+            throw new IllegalArgumentException("Account is deactivated");
+        }
         long expiryMs = System.currentTimeMillis() + 86_400_000L; // 24h
-        String payload = email + "|" + expiryMs;
-        return java.util.Base64.getUrlEncoder().withoutPadding()
-                .encodeToString(payload.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        
+        byte[] randomBytes = new byte[32];
+        new SecureRandom().nextBytes(randomBytes);
+        String rawToken = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
+        
+        String tokenHash = hashToken(rawToken);
+        String purpose = (user.getRequiresPasswordReset() != null && user.getRequiresPasswordReset()) 
+                         ? "INITIAL_PROVISIONING" : "PASSWORD_RESET";
+        
+        user.setResetTokenHash(tokenHash);
+        user.setResetTokenExpiry(expiryMs);
+        user.setResetTokenPurpose(purpose);
+        userRepository.save(user);
+        
+        log.info("AUTH_AUDIT: Generated {} token for email [{}] expiring at {}", purpose, email, expiryMs);
+        
+        return rawToken;
     }
 
     /** Validate token and update password — NO old password required. */
     public void resetPasswordByToken(String token, String newPassword) {
-        String decoded;
-        try {
-            decoded = new String(java.util.Base64.getUrlDecoder().decode(token),
-                    java.nio.charset.StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            throw new RuntimeException("Invalid or malformed token.");
+        if (token == null || token.trim().isEmpty()) {
+            throw new RuntimeException("Token cannot be blank.");
         }
-        String[] parts = decoded.split("\\|");
-        if (parts.length != 2) throw new RuntimeException("Invalid token structure.");
-        String email = parts[0];
-        long expiry = Long.parseLong(parts[1]);
-        if (System.currentTimeMillis() > expiry) throw new RuntimeException("Reset link has expired. Please generate a new one.");
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found."));
+        
+        String tokenHash = hashToken(token);
+        
+        User user = userRepository.findByResetTokenHash(tokenHash)
+                .orElseThrow(() -> {
+                    log.warn("AUTH_AUDIT: Attempted to use invalid or forged reset token.");
+                    return new RuntimeException("Invalid or malformed token.");
+                });
+                
+        if (System.currentTimeMillis() > user.getResetTokenExpiry()) {
+            log.warn("AUTH_AUDIT: Attempted to use expired {} token for user [{}]", user.getResetTokenPurpose(), user.getEmail());
+            user.setResetTokenHash(null);
+            user.setResetTokenExpiry(null);
+            user.setResetTokenPurpose(null);
+            userRepository.save(user);
+            throw new RuntimeException("Reset link has expired. Please generate a new one.");
+        }
+        
+        String purposeUsed = user.getResetTokenPurpose();
+        
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setRequiresPasswordReset(false);
+        user.setResetTokenHash(null);
+        user.setResetTokenExpiry(null);
+        user.setResetTokenPurpose(null);
         userRepository.save(user);
+        
+        log.info("AUTH_AUDIT: Successfully used {} token for user [{}]. Token revoked.", purposeUsed, user.getEmail());
+    }
+
+    public void deactivateUser(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setActive(false);
+        user.setResetTokenHash(null);
+        user.setResetTokenExpiry(null);
+        user.setResetTokenPurpose(null);
+        userRepository.save(user);
+        log.info("AUTH_AUDIT: Deactivated user [{}]", user.getEmail());
     }
 }

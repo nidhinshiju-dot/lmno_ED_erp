@@ -45,8 +45,8 @@ export default function OnboardSchoolPage() {
     setError("");
     
     try {
-      // Pointing to the UAT API Gateway
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api-gateway-249177610154.asia-south1.run.app/api/v1";
+      // Always route through the local API gateway (set via NEXT_PUBLIC_API_URL env var in Docker)
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8085/api/v1";
       const response = await fetch(`${API_URL}/schools`, {
         method: "POST",
         headers: {

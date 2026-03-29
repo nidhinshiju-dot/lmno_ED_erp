@@ -84,9 +84,54 @@ export default function ReportsPage() {
                                 <button className="bg-primary hover:bg-blue-600 text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium text-sm">
                                     <BarChart3 className="w-4 h-4" /> Generate Report
                                 </button>
-                                <button className="border border-border hover:bg-muted text-foreground px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium text-sm">
-                                    <Download className="w-4 h-4" /> Export PDF
-                                </button>
+                                {selectedReport === "student" ? (
+                                    <button 
+                                        onClick={async () => {
+                                            const token = localStorage.getItem("erp_token");
+                                            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8085/api/v1";
+                                            // Grab a hardcoded demo student ID for the frontend demo since there's no state variable capturing it yet
+                                            const studentIdReq = "DEMO123"; 
+                                            
+                                            try {
+                                                const res = await fetch(`${API_BASE_URL}/reports/student/${studentIdReq}/pdf`, {
+                                                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                                                });
+                                                if (!res.ok) throw new Error("Failed to export PDF");
+                                                const blob = await res.blob();
+                                                const url = URL.createObjectURL(blob);
+                                                const a = document.createElement("a");
+                                                a.href = url;
+                                                const filename = `student_report_${studentIdReq}.pdf`;
+                                                a.style.display = "none";
+                                                a.href = url;
+                                                a.download = filename;
+                                                
+                                                // Ensure Safari and Firefox can read the DOM before clicking
+                                                document.body.appendChild(a);
+                                                a.click();
+                                                
+                                                setTimeout(() => {
+                                                    if (document.body.contains(a)) {
+                                                        document.body.removeChild(a);
+                                                    }
+                                                    URL.revokeObjectURL(url);
+                                                }, 3000); // 3 seconds is generous for slow HDDs
+                                            } catch (err: any) {
+                                                alert(`PDF export failed: ${err.message}. Ensure backend is running.`);
+                                            }
+                                        }}
+                                        className="border border-border hover:bg-muted text-foreground px-4 py-2 rounded-lg flex items-center gap-2 transition-colors font-medium text-sm"
+                                    >
+                                        <Download className="w-4 h-4" /> Export PDF
+                                    </button>
+                                ) : (
+                                    <button 
+                                        disabled
+                                        className="border border-border bg-muted/50 text-muted-foreground px-4 py-2 rounded-lg flex items-center gap-2 font-medium text-sm cursor-not-allowed opacity-70"
+                                    >
+                                        <Download className="w-4 h-4" /> Export PDF (Coming Soon)
+                                    </button>
+                                )}
                             </div>
 
                             <div className="bg-muted/50 rounded-lg p-8 text-center text-muted-foreground text-sm">

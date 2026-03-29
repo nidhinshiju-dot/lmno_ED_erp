@@ -119,6 +119,7 @@ public class AuthController {
         }
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
     @PostMapping("/generate-reset-token")
     public ResponseEntity<?> generateResetToken(@RequestBody GenerateResetTokenRequest request) {
         try {
@@ -128,6 +129,17 @@ public class AuthController {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Internal server error: " + e.getMessage());
+        }
+    }
+
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
+    @PatchMapping("/users/{userId}/deactivate")
+    public ResponseEntity<?> deactivateUser(@PathVariable String userId) {
+        try {
+            authService.deactivateUser(userId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(e.getMessage());
         }
     }
 

@@ -21,8 +21,8 @@ public class User {
     @Column(nullable = false)
     private String role; // ADMIN, TEACHER, STUDENT, PARENT
 
-    @Column(name = "tenant_id", nullable = false)
-    private String tenantId;
+    @Column(name = "tenant_id")
+    private String tenantId; // null for SUPER_ADMIN (platform-level, no tenant)
     
     @Column(name = "first_name")
     private String firstName;
@@ -35,4 +35,16 @@ public class User {
 
     @Column(name = "reference_id")
     private String referenceId;
+
+    @Column(name = "reset_token_hash")
+    private String resetTokenHash;
+
+    @Column(name = "reset_token_expiry")
+    private Long resetTokenExpiry;
+
+    @Column(name = "reset_token_purpose")
+    private String resetTokenPurpose;
+
+    @Column(name = "is_active")
+    private boolean isActive = true;
 }

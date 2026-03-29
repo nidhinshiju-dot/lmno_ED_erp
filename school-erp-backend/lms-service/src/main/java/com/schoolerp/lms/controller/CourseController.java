@@ -27,6 +27,11 @@ public class CourseController {
         return courseService.getCoursesByTeacherId(teacherId);
     }
 
+    @GetMapping("/class/{classId}")
+    public List<Course> getCoursesByClassId(@PathVariable("classId") String classId) {
+        return courseService.getCoursesByClassId(classId);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Course> getCourseById(@PathVariable("id") String id) {
         Optional<Course> course = courseService.getCourseById(id);

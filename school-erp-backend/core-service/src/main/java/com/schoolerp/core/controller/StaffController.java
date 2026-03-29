@@ -51,6 +51,7 @@ public class StaffController {
         return staffService.createStaff(staff, tenantId);
     }
 
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('SUPER_ADMIN')")
     @PostMapping("/{id}/provision-login")
     public ResponseEntity<?> provisionLogin(@PathVariable("id") String id) {
         try {

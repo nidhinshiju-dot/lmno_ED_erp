@@ -100,7 +100,6 @@ function PasswordResetCard({ username, entityId, phone }: { username: string | n
                         </button>
                     )}
                 </div>
-                <p className="text-xs text-slate-400 mt-1.5">Default password: <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">Temporary123!</code></p>
             </div>
 
             {/* Error */}
@@ -455,7 +454,21 @@ export default function StaffProfilePage({ params }: { params: Promise<{ id: str
                         <PasswordResetCard username={staff.email} entityId={id} phone={staff.phone} />
                     ) : (
                         <div className="bg-slate-50 dark:bg-zinc-800/50 border border-dashed border-slate-300 dark:border-zinc-700 rounded-2xl p-6 text-center">
-                            <p className="text-sm font-medium text-slate-500 dark:text-zinc-400">No login account has been provisioned for this staff member.</p>
+                            <p className="text-sm font-medium text-slate-500 dark:text-zinc-400 mb-4">No login account has been provisioned for this staff member.</p>
+                            <button 
+                                onClick={async () => {
+                                    try {
+                                        await StaffService.provisionLogin(id);
+                                        alert("Login provisioned! Please refresh the page.");
+                                        window.location.reload();
+                                    } catch (err: any) {
+                                        alert(err.message || "Failed to provision login.");
+                                    }
+                                }}
+                                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm transition-colors"
+                            >
+                                Provision Login
+                            </button>
                         </div>
                     )}
                 </div>

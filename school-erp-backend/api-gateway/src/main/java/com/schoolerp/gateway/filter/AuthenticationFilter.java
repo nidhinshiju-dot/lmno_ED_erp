@@ -78,8 +78,13 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
 
     private boolean isSecured(ServerWebExchange exchange) {
         String path = exchange.getRequest().getURI().getPath();
-        // Allow unauthenticated access to auth endpoints, swagger etc
-        return !path.contains("/api/v1/auth/");
+        if (path.equals("/api/v1/auth/login") || 
+            path.equals("/api/v1/auth/reset-password") || 
+            path.equals("/api/v1/auth/reset-password-by-token") ||
+            path.startsWith("/api/v1/auth/health")) {
+            return false;
+        }
+        return true;
     }
 
     public static class Config {

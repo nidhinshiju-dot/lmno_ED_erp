@@ -32,9 +32,11 @@ public class CredentialsService {
     private final ParentRepository parentRepository;
     private final com.schoolerp.core.repository.SchoolRepository schoolRepository;
     
-    // Auth-Service is routed directly via docker container hostname
-    private static final String AUTH_REGISTER_URL = "http://erp-uat-auth:8081/api/v1/auth/register";
+    // Auth-Service is routed directly via docker container hostname (internal service-to-service, not via gateway)
+    @org.springframework.beans.factory.annotation.Value("${AUTH_SERVICE_URL:http://auth-service:8081}")
+    private String authServiceBaseUrl;
     private final RestTemplate restTemplate = new RestTemplate();
+
 
     @Async
     @Transactional
@@ -191,7 +193,8 @@ public class CredentialsService {
         log.info("Completed scheduled retry for failed provisioning.");
     }
 
-    private static final String AUTH_PROVISION_URL = "http://erp-uat-auth:8081/api/v1/auth/provision";
+    private static final String AUTH_PROVISION_PATH = "/api/v1/auth/provision";
+
 
     private String createUserInAuthService(String email, String role, String tenantId, String referenceId) {
         try {
@@ -206,8 +209,9 @@ public class CredentialsService {
             );
             HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
 
-            ResponseEntity<Map> response = restTemplate.exchange(AUTH_PROVISION_URL, HttpMethod.POST, request, Map.class);
+            ResponseEntity<Map> response = restTemplate.exchange(authServiceBaseUrl + AUTH_PROVISION_PATH, HttpMethod.POST, request, Map.class);
             log.info("Provision request - email: {}, tenantId: {}, response status: {}", email, tenantId, response.getStatusCode());
+
 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 String generatedPassword = (String) response.getBody().get("temporaryPassword");

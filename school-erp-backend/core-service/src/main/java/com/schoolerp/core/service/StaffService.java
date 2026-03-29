@@ -52,6 +52,16 @@ public class StaffService {
         credentialsService.createStaffCredential(staff);
     }
 
+    @org.springframework.beans.factory.annotation.Value("${SERVICE_AUTH_TOKEN:}")
+    private String serviceAuthToken;
+
+    @org.springframework.beans.factory.annotation.Value("${API_GATEWAY_URL:http://localhost:8080}")
+    private String apiGatewayUrl;
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(StaffService.class);
+    private final org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+
+    // ... inside deleteStaff, after saving INACTIVE status:
     @Transactional
     public void deleteStaff(String id) {
         // 1. Remove this staff from being a class teacher
@@ -68,6 +78,25 @@ public class StaffService {
         staffRepository.findById(id).ifPresent(staff -> {
             staff.setStatus("INACTIVE");
             staffRepository.save(staff);
+
+            if (staff.getUserId() != null && !staff.getUserId().trim().isEmpty()) {
+                try {
+                    org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                    headers.set("Authorization", "Bearer " + serviceAuthToken);
+                    org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
+                    
+                    String url = apiGatewayUrl + "/api/v1/auth/users/" + staff.getUserId() + "/deactivate";
+                    restTemplate.exchange(
+                            url,
+                            org.springframework.http.HttpMethod.PATCH,
+                            entity,
+                            Void.class
+                    );
+                    log.info("Successfully deactivated auth user for staff: {}", id);
+                } catch (Exception e) {
+                    log.error("Failed to deactivate auth user for staff {}: {}", id, e.getMessage());
+                }
+            }
         });
     }
 }

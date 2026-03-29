@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8085/api/v1";
 
 async function fetchApi(endpoint: string, options: RequestInit = {}) {
     const defaultHeaders: Record<string, string> = {
@@ -29,6 +29,7 @@ async function fetchApi(endpoint: string, options: RequestInit = {}) {
 
 export const SchoolService = {
     getAll: () => fetchApi("/schools"),
+    getById: (id: string) => fetchApi(`/schools/${id}`),
     create: (data: Record<string, unknown>) => fetchApi("/schools", { method: "POST", body: JSON.stringify(data) }),
     toggle: (id: string) => fetchApi(`/schools/${id}/toggle`, { method: "PATCH" }),
 };

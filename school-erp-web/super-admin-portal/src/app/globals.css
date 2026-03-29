@@ -4,26 +4,45 @@
 
 @layer base {
   :root {
-    /* Elegant White and Light Blue Theme (SaaS) */
-    --background: 210 40% 98%; /* Very light blue/gray background */
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%; /* Pure white cards */
-    --card-foreground: 222.2 84% 4.9%;
-    
-    --primary: 212 100% 48%; /* Bright SaaS Blue */
-    --primary-foreground: 210 40% 98%;
-    
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --border: 214.3 31.8% 91.4%;
+    /* Neutral warm-gray base — feels calm, professional */
+    --background: 220 14% 96%;      /* #f3f4f6 cool gray page bg */
+    --foreground: 220 25% 12%;      /* near-black text */
+
+    --card: 0 0% 100%;              /* pure white surfaces */
+    --card-foreground: 220 25% 12%;
+
+    --primary: 221 83% 53%;         /* professional blue — #3b82f6 */
+    --primary-foreground: 0 0% 100%;
+
+    --muted: 220 14% 93%;
+    --muted-foreground: 220 9% 46%;
+
+    --border: 220 13% 89%;
+    --ring: 221 83% 53%;
+
+    --sidebar-bg: 220 20% 10%;      /* dark sidebar */
+    --sidebar-text: 220 14% 70%;
+    --sidebar-text-active: 0 0% 100%;
+    --sidebar-active-bg: 221 83% 53%;
+    --sidebar-hover: 220 20% 16%;
+
+    --radius: 0.75rem;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-border box-border;
   }
   body {
     @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))] antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+  /* Smooth scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
 }
+
+

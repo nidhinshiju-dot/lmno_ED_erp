@@ -2,10 +2,10 @@
 
 import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
-import { fetchWithAuth } from "@/lib/api";
+import { fetchWithAuth, ClassService } from "@/lib/api";
 import {
     X, Upload, Download, FileSpreadsheet, CheckCircle2,
-    XCircle, Loader2, AlertCircle, ChevronRight, RotateCcw
+    XCircle, Loader2, AlertCircle, ChevronRight, RotateCcw, RefreshCw
 } from "lucide-react";
 
 interface BulkImportModalProps {
@@ -55,21 +55,36 @@ function validateRow(row: Record<string, string>): PreviewRow {
     return { fullName, dob: dob || dobRaw, parentContact, guardianName, guardianRelation, admissionNumber, errors, isValid: errors.length === 0 };
 }
 
-// ── Template Generator ────────────────────────────────────────────────────────
-function downloadTemplate() {
-    const headers = [["Full Name", "Date of Birth", "Parent Contact", "Guardian Name", "Relationship", "Admission Number"]];
-    const sample = [
-        ["Jane Doe", "12-06-2015", "9876543210", "John Doe", "Father", ""],
-        ["Alex Roy", "01-09-2014", "9123456780", "Mary Roy", "Mother", ""],
-    ];
-    const ws = XLSX.utils.aoa_to_sheet([...headers, ...sample]);
-    ws["!cols"] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 20 }];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Students");
-    XLSX.writeFile(wb, "student_import_template.xlsx");
+// ── Template Download (server-side CSV) ──────────────────────────────────────────
+async function downloadTemplate() {
+    const token = localStorage.getItem("erp_token");
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8085/api/v1";
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/students/template`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+
+        if (!res.ok) {
+            throw new Error(`Server returned ${res.status}`);
+        }
+
+        const arrayBuffer = await res.arrayBuffer();
+        console.info(`[template-download] ArrayBuffer size: ${arrayBuffer.byteLength} bytes`);
+
+        // Use the universally reliable SheetJS library (already in the project stack)
+        // to parse and securely save the workbook, bypassing Chromium's blob-isolation rules.
+        const wb = XLSX.read(arrayBuffer, { type: "array" });
+        XLSX.writeFile(wb, "students_template.xlsx");
+        
+        console.info(`[template-download] Successfully invoked XLSX.writeFile`);
+    } catch (err: any) {
+        console.error("[template-download] Failed:", err);
+        alert(`Template download failed: ${err?.message || "Unknown error"}. Check that core-service is running.`);
+    }
 }
 
-export function BulkImportModal({ classes, onClose, onImportSuccess }: BulkImportModalProps) {
+export function BulkImportModal({ classes: initialClasses, onClose, onImportSuccess }: BulkImportModalProps) {
     const [step, setStep] = useState<Step>("upload");
     const [selectedClass, setSelectedClass] = useState("");
     const [academicYear, setAcademicYear] = useState("2025-2026");
@@ -80,6 +95,24 @@ export function BulkImportModal({ classes, onClose, onImportSuccess }: BulkImpor
     const [progress, setProgress] = useState(0);
     const [importResult, setImportResult] = useState({ success: 0, failed: 0, errors: [] as string[] });
     const fileRef = useRef<HTMLInputElement>(null);
+    const [classes, setClasses] = useState(initialClasses);
+    const [refreshingClasses, setRefreshingClasses] = useState(false);
+
+    const refreshClasses = async () => {
+        setRefreshingClasses(true);
+        try {
+            const fresh = await ClassService.getAll();
+            const sorted = [...(fresh || [])].sort((a, b) => {
+                if (a.gradeLevel !== b.gradeLevel) return (a.gradeLevel || 0) - (b.gradeLevel || 0);
+                return a.name.localeCompare(b.name);
+            });
+            setClasses(sorted);
+        } catch {
+            // silently fail — user sees empty dropdown
+        } finally {
+            setRefreshingClasses(false);
+        }
+    };
 
     const parseFile = (file: File) => {
         setFileName(file.name);
@@ -143,7 +176,11 @@ export function BulkImportModal({ classes, onClose, onImportSuccess }: BulkImpor
                 success++;
             } catch (e: any) {
                 failed++;
-                errors.push(`Row ${i + 1} (${row.fullName}): ${e?.message || "Failed"}`);
+                // Surface the full backend error message so the admin can diagnose the issue
+                const msg = e?.message && e.message !== "Failed"
+                    ? e.message
+                    : "Unknown error — check that the class exists and the tenant is fully provisioned";
+                errors.push(`Row ${i + 1} (${row.fullName}): ${msg}`);
             }
             setProgress(Math.round(((i + 1) / validRows.length) * 100));
         }
@@ -204,15 +241,39 @@ export function BulkImportModal({ classes, onClose, onImportSuccess }: BulkImpor
                     {/* ── STEP 1: UPLOAD ── */}
                     {step === "upload" && (
                         <div className="space-y-5">
+
+                            {/* ── No classes warning (post-provisioning guard) ── */}
+                            {classes.length === 0 && (
+                                <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                                    <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <p className="text-sm font-semibold text-amber-900">No classes found</p>
+                                        <p className="text-xs text-amber-800 mt-0.5">
+                                            Bulk import requires at least one class to exist first. After school provisioning, create classes before importing students.
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={refreshClasses}
+                                        disabled={refreshingClasses}
+                                        className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-amber-100 text-amber-800 rounded-lg hover:bg-amber-200 transition-colors disabled:opacity-60"
+                                    >
+                                        {refreshingClasses ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                                        Retry
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-sm font-medium mb-1.5 block">Class & Division *</label>
                                     <select
                                         value={selectedClass}
                                         onChange={e => setSelectedClass(e.target.value)}
-                                        className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                                        disabled={classes.length === 0}
+                                        className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        <option value="">Select Class & Division</option>
+                                        <option value="">{classes.length === 0 ? "No classes available — create classes first" : "Select Class & Division"}</option>
                                         {classes.map(c => (
                                             <option key={c.id} value={c.id}>
                                                 {c.name}{c.branch ? ` (${c.branch})` : ""}{c.roomNumber ? ` — Div ${c.roomNumber}` : ""}
@@ -244,7 +305,7 @@ export function BulkImportModal({ classes, onClose, onImportSuccess }: BulkImpor
                             >
                                 <input ref={fileRef} type="file" accept=".xlsx,.csv" onChange={handleFileChange} className="hidden" />
                                 <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-                                <p className="font-semibold text-sm">Drag & drop your Excel file here</p>
+                                <p className="font-semibold text-sm">Drag &amp; drop your Excel or CSV file here</p>
                                 <p className="text-muted-foreground text-xs mt-1">or click to browse — supports .xlsx and .csv</p>
                             </div>
 
@@ -253,11 +314,11 @@ export function BulkImportModal({ classes, onClose, onImportSuccess }: BulkImpor
                                 <FileSpreadsheet className="w-8 h-8 text-blue-500 flex-shrink-0" />
                                 <div className="flex-1">
                                     <p className="text-sm font-semibold text-blue-900">Need the template?</p>
-                                    <p className="text-xs text-blue-600">Download the official format with sample rows filled in.</p>
+                                    <p className="text-xs text-blue-600">Download the official XLSX template format — opens directly in Excel.</p>
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={downloadTemplate}
+                                    onClick={() => downloadTemplate()}
                                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors flex-shrink-0"
                                 >
                                     <Download className="w-3.5 h-3.5" /> Download Template

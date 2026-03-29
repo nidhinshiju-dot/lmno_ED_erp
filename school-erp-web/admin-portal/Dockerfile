@@ -11,6 +11,9 @@ RUN npm ci
 COPY . .
 # Set the environment variable for standalone output
 ENV NEXT_PRIVATE_STANDALONE=true
+# Accept build-time API URL (baked into the Next.js static bundle)
+ARG NEXT_PUBLIC_API_URL=http://localhost:8085/api/v1
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build
 
 # ── Stage 2: Runner ──

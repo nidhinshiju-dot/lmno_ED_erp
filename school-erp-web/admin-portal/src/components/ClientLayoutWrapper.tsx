@@ -34,9 +34,9 @@ const getPageTitle = (pathname: string) => {
 export default function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const isPublicPage = pathname === "/" || pathname === "/login" || pathname.startsWith("/reset-password");
-    const isTeacherPage = pathname.startsWith("/teacher");
-    const isStudentPage = pathname.startsWith("/student");
-    const isParentPage = pathname.startsWith("/parent");
+    const isTeacherPage = pathname === "/teacher" || pathname.startsWith("/teacher/");
+    const isStudentPage = pathname === "/student" || pathname.startsWith("/student/");
+    const isParentPage = pathname === "/parent" || pathname.startsWith("/parent/");
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     if (isPublicPage) {

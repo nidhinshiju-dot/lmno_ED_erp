@@ -22,6 +22,12 @@ public class CourseService {
         return courseRepository.findByTeacherId(teacherId);
     }
 
+    public List<Course> getCoursesByClassId(String classId) {
+        return courseRepository.findAll().stream()
+                .filter(c -> classId.equals(c.getClassId()) && !"ARCHIVED".equals(c.getStatus()))
+                .toList();
+    }
+
     public Optional<Course> getCourseById(String id) {
         return courseRepository.findById(id);
     }

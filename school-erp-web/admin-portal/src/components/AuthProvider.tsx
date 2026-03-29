@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Check local storage for existing session
         const storedToken = localStorage.getItem("erp_token");
         const storedUser = localStorage.getItem("erp_user");
-        const isPublicRoute = pathname === "/login" || pathname === "/";
+        const isPublicRoute = pathname === "/login" || pathname === "/" || pathname.startsWith("/reset-password");
 
         if (storedToken && storedUser) {
             setToken(storedToken);
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
-            {token || pathname === "/login" || pathname === "/" ? children : null}
+            {token || pathname === "/login" || pathname === "/" || pathname.startsWith("/reset-password") ? children : null}
         </AuthContext.Provider>
     );
 }

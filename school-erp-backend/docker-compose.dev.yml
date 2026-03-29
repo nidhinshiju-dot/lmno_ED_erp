@@ -1,7 +1,7 @@
 version: '3.9'
 
 # Override profile for Hot Reload local development
-# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Usage: -compose -f -compose.yml -f -compose.dev.yml up -d
 
 services:
   api-gateway:
